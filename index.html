@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anonymous Board</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* iOS Minimalist Monochrome Theme */
+        :root {
+            --bg-global: #fafafa;
+            --bg-container: #ffffff;
+            --border: #e5e5ea;
+            --text-main: #000000;
+            --text-muted: #8e8e93;
+            --input-bg: #f2f2f7;
+            --btn-bg: #1c1c1e;
+            --btn-text: #ffffff;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-global: #121212;
+                --bg-container: #1c1c1e;
+                --border: #2c2c2e;
+                --text-main: #ffffff;
+                --text-muted: #8e8e93;
+                --input-bg: #2c2c2e;
+                --btn-bg: #ffffff;
+                --btn-text: #1c1c1e;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-global);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 16px;
+            transition: background-color 0.3s;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 420px;
+            background: var(--bg-container);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            height: 85vh;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.04);
+            overflow: hidden;
+        }
+
+        header {
+            padding: 24px 20px 16px 20px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+        }
+
+        header p {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .feed {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            scroll-behavior: smooth;
+        }
+
+        .message-card {
+            align-self: flex-start;
+            max-width: 90%;
+            animation: fadeIn 0.25s ease-out;
+        }
+
+        .message-text {
+            font-size: 15px;
+            line-height: 1.45;
+            color: var(--text-main);
+            word-break: break-word;
+        }
+
+        .message-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+            font-weight: 500;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            margin: auto;
+            font-size: 14px;
+        }
+
+        .input-area {
+            padding: 16px;
+            border-top: 1px solid var(--border);
+            background: var(--bg-container);
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .ios-input {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: none;
+            background: var(--input-bg);
+            color: var(--text-main);
+            font-size: 14px;
+            outline: none;
+        }
+
+        textarea.ios-input {
+            resize: none;
+            height: 64px;
+        }
+
+        .ios-btn {
+            background-color: var(--btn-bg);
+            color: var(--btn-text);
+            border: none;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.1s, transform 0.1s;
+        }
+
+        .ios-btn:active {
+            opacity: 0.8;
+            transform: scale(0.99);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header>
+        <h1>Messages</h1>
+        <p>Anonymous and secure</p>
+    </header>
+
+    <div class="feed" id="messageFeed">
+        <div class="empty-state" id="emptyState">Loading messages...</div>
+    </div>
+
+    <div class="input-area">
+        <form id="messageForm" class="input-group">
+            <input type="text" id="codenameInput" class="ios-input" placeholder="Codename" required maxlength="20">
+            <textarea id="messageInput" class="ios-input" placeholder="Write a message..." required maxlength="300"></textarea>
+            <button type="submit" id="submitBtn" class="ios-btn">Send</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    // REPLACE THESE WITH YOUR ACTUAL SUPABASE CREDENTIALS
+    const SUPABASE_URL = 'https://muxekpbcawffuvszaxmk.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_Q-MoQP1-Assz9V9UJQP4LQ_q7E8GowV';
+    
+    const supabase = SUPABASE.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const messageForm = document.getElementById('messageForm');
+    const messageFeed = document.getElementById('messageFeed');
+    const emptyState = document.getElementById('emptyState');
+    const submitBtn = document.getElementById('submitBtn');
+
+    // Fetch messages live from Supabase
+    async function fetchMessages() {
+        const { data, error } = await supabase
+            .from('messages')
+            .select('*')
+            .order('id', { ascending: true });
+
+        if (error) {
+            console.error('Error fetching data:', error);
+            emptyState.innerText = "Failed to load messages.";
+            return;
+        }
+
+        if (data.length === 0) {
+            emptyState.style.display = 'block';
+            emptyState.innerText = "No messages yet.";
+            messageFeed.innerHTML = '';
+            messageFeed.appendChild(emptyState);
+            return;
+        }
+
+        emptyState.style.display = 'none';
+        messageFeed.innerHTML = '';
+
+        data.forEach(msg => {
+            const card = document.createElement('div');
+            card.className = 'message-card';
+            
+            // Format Timestamp
+            const dateStr = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            card.innerHTML = `
+                <div class="message-text">${escapeHTML(msg.text)}</div>
+                <div class="message-meta">@${escapeHTML(msg.codename)} • ${dateStr}</div>
+            `;
+            messageFeed.appendChild(card);
+        });
+
+        messageFeed.scrollTop = messageFeed.scrollHeight;
+    }
+
+    // Insert new message into database
+    messageForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const codename = document.getElementById('codenameInput').value.trim();
+        const text = document.getElementById('messageInput').value.trim();
+        
+        if (!codename || !text) return;
+
+        submitBtn.disabled = true;
+        submitBtn.innerText = "Sending...";
+
+        const { error } = await supabase
+            .from('messages')
+            .insert([{ codename, text }]);
+
+        submitBtn.disabled = false;
+        submitBtn.innerText = "Send";
+
+        if (error) {
+            alert('Could not send message. Try again!');
+            console.error(error);
+        } else {
+            document.getElementById('messageInput').value = '';
+            fetchMessages(); // Refresh UI
+        }
+    });
+
+    function escapeHTML(str) {
+        return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+    }
+
+    // Check data on load
+    fetchMessages();
+    
+    // Check for updates every 10 seconds automatically
+    setInterval(fetchMessages, 10000);
+</script>
+
+</body>
+</html>
