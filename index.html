@@ -4,29 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Messages</title>
+    <!-- Include Supabase CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* True iOS Dark & Light Mode System Configurations */
+        /* iOS Minimalist Monochrome Theme */
         :root {
-            --bg-system: #ffffff;
-            --bg-secondary: #f2f2f7;
-            --bg-bubble-gray: #e9e9eb;
-            --bg-bubble-blue: #007aff;
+            --bg-global: #fafafa;
+            --bg-container: #ffffff;
+            --border: #e5e5ea;
             --text-main: #000000;
             --text-muted: #8e8e93;
-            --border: #c6c6c8;
+            --input-bg: #f2f2f7;
+            --btn-bg: #1c1c1e;
+            --btn-text: #ffffff;
             --nav-bg: rgba(255, 255, 255, 0.85);
         }
 
         @media (prefers-color-scheme: dark) {
             :root {
-                --bg-system: #000000;
-                --bg-secondary: #1c1c1e;
-                --bg-bubble-gray: #262629;
-                --bg-bubble-blue: #0a84ff;
+                --bg-global: #121212;
+                --bg-container: #1c1c1e;
+                --border: #2c2c2e;
                 --text-main: #ffffff;
                 --text-muted: #8e8e93;
-                --border: #3a3a3c;
+                --input-bg: #2c2c2e;
+                --btn-bg: #ffffff;
+                --btn-text: #1c1c1e;
                 --nav-bg: rgba(28, 28, 30, 0.85);
             }
         }
@@ -35,25 +38,26 @@
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            background-color: var(--bg-system);
+            background-color: var(--bg-global);
             color: var(--text-main);
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            transition: background-color 0.3s;
         }
 
-        /* iOS App Shell Container Setup */
-        .phone-wrapper {
+        /* App Shell Frame Container */
+        .app-container {
             width: 100%;
             max-width: 420px;
             height: 100vh;
-            background: var(--bg-system);
+            background: var(--bg-container);
             display: flex;
             flex-direction: column;
             position: relative;
@@ -61,15 +65,15 @@
         }
 
         @media (min-width: 421px) {
-            .phone-wrapper {
+            .app-container {
                 height: 85vh;
-                border-radius: 30px;
+                border-radius: 24px;
                 border: 1px solid var(--border);
-                box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+                box-shadow: 0 4px 24px rgba(0,0,0,0.04);
             }
         }
 
-        /* Views management layout mechanics */
+        /* Screen View Architecture */
         .view {
             display: flex;
             flex-direction: column;
@@ -79,20 +83,20 @@
             top: 0;
             left: 0;
             transition: transform 0.3s cubic-bezier(0.1, 1, 0.1, 1);
-            background: var(--bg-system);
+            background: var(--bg-container);
         }
 
-        #listExtensionView { z-index: 2; transform: translateX(0); }
-        #chatDetailView { z-index: 3; transform: translateX(100%); }
+        #listView { z-index: 2; transform: translateX(0); }
+        #chatView { z-index: 3; transform: translateX(100%); }
         .slide-out { transform: translateX(-20%); }
         .slide-in { transform: translateX(0) !important; }
 
-        /* iOS Blur Effect Header Framework */
+        /* iOS Translucent Navbar styling */
         .ios-navbar {
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             background: var(--nav-bg);
-            border-bottom: 0.5px solid var(--border);
+            border-bottom: 1px solid var(--border);
             padding: 14px 16px;
             display: flex;
             align-items: center;
@@ -104,42 +108,23 @@
         .list-header {
             flex-direction: column;
             align-items: flex-start;
-            padding-top: 20px;
+            padding-top: 24px;
+            padding-bottom: 16px;
         }
 
-        .list-header-top {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-            color: var(--bg-bubble-blue);
-            font-size: 16px;
+        .list-header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: -0.3px;
         }
 
-        .list-title {
-            font-size: 32px;
-            font-weight: 700;
-            margin-top: 10px;
-            color: var(--text-main);
+        .list-header p {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 2px;
         }
 
-        .search-bar-container {
-            width: 100%;
-            padding: 8px 16px;
-            background: var(--bg-system);
-        }
-
-        .search-bar {
-            width: 100%;
-            padding: 8px 12px 8px 32px;
-            border-radius: 10px;
-            background: var(--bg-secondary);
-            border: none;
-            color: var(--text-main);
-            font-size: 16px;
-            outline: none;
-        }
-
-        /* iOS List Interfacing Typography & Layouts */
+        /* Conversation Thread Lists */
         .conversation-list {
             flex: 1;
             overflow-y: auto;
@@ -147,33 +132,29 @@
 
         .thread-item {
             display: flex;
-            padding: 12px 16px;
-            gap: 12px;
+            padding: 16px 20px;
+            gap: 14px;
             cursor: pointer;
-            border-bottom: 0.5px solid var(--border);
+            border-bottom: 1px solid var(--border);
             align-items: center;
         }
 
         .thread-item:active {
-            background-color: var(--bg-secondary);
+            background-color: var(--input-bg);
         }
 
         .avatar {
-            width: 48px;
-            height: 48px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
-            background: var(--bg-secondary);
+            background: var(--input-bg);
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 600;
-            font-size: 18px;
+            font-size: 16px;
             color: var(--text-muted);
             flex-shrink: 0;
-        }
-
-        .avatar-initials {
-            text-transform: uppercase;
         }
 
         .thread-details {
@@ -189,244 +170,258 @@
 
         .thread-name {
             font-weight: 600;
-            font-size: 16px;
+            font-size: 15px;
             color: var(--text-main);
         }
 
         .thread-time {
-            font-size: 14px;
+            font-size: 12px;
             color: var(--text-muted);
         }
 
         .thread-preview {
-            font-size: 14px;
+            font-size: 13px;
             color: var(--text-muted);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
-        /* iOS Chat Bubble Messaging Framework */
+        /* Chat View Elements */
         .chat-navbar {
             justify-content: space-between;
         }
 
         .back-btn {
-            color: var(--bg-bubble-blue);
+            color: var(--text-main);
+            font-weight: 500;
             cursor: pointer;
             display: flex;
             align-items: center;
-            font-size: 17px;
+            font-size: 15px;
             background: none;
             border: none;
             outline: none;
         }
 
-        .chat-target-meta {
-            text-align: center;
+        .chat-title-container {
             position: absolute;
             left: 50%;
             transform: translateX(-50%);
+            text-align: center;
         }
 
-        .chat-target-name {
-            font-size: 13px;
+        .chat-title-main {
+            font-size: 15px;
             font-weight: 600;
-            margin-top: 2px;
         }
 
-        .chat-feed {
+        /* RESTORED: Original Message Feed Cards Style */
+        .feed {
             flex: 1;
             overflow-y: auto;
-            padding: 16px;
+            padding: 20px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            background: var(--bg-system);
+            gap: 16px;
+            scroll-behavior: smooth;
         }
 
-        .date-divider {
-            text-align: center;
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--text-muted);
-            margin: 10px 0;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .bubble-row {
-            display: flex;
+        .message-card {
+            align-self: flex-start;
             width: 100%;
-            margin-bottom: 2px;
+            max-width: 90%;
+            animation: fadeIn 0.25s ease-out;
         }
 
-        .bubble-incoming { justify-content: flex-start; }
-        .bubble-outgoing { justify-content: flex-end; }
+        .message-image {
+            width: 100%;
+            max-height: 220px;
+            object-fit: cover;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            margin-bottom: 6px;
+            display: block;
+            background-color: var(--input-bg);
+        }
 
-        .bubble {
-            max-width: 70%;
-            padding: 10px 16px;
-            border-radius: 20px;
-            font-size: 16px;
-            line-height: 1.4;
+        .message-text {
+            font-size: 15px;
+            line-height: 1.45;
+            color: var(--text-main);
             word-break: break-word;
         }
 
-        .bubble-incoming .bubble {
-            background-color: var(--bg-bubble-gray);
-            color: var(--text-main);
+        .message-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+            font-weight: 500;
         }
 
-        .bubble-outgoing .bubble {
-            background-color: var(--bg-bubble-blue);
-            color: #ffffff;
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            margin: auto;
+            font-size: 14px;
         }
 
-        .bubble-image {
-            max-width: 100%;
-            border-radius: 14px;
-            margin-bottom: 4px;
-            display: block;
+        /* RESTORED: Original Input Composition Area */
+        .input-area {
+            padding: 16px;
+            border-top: 1px solid var(--border);
+            background: var(--bg-container);
         }
 
-        /* iOS Modern Native Bottom Composition Deck */
-        .ios-input-bar {
-            padding: 8px 12px 24px 12px;
-            border-top: 0.5px solid var(--border);
-            background: var(--bg-system);
-            display: flex;
-            align-items: flex-end;
-            gap: 8px;
-        }
-
-        .camera-btn {
-            font-size: 24px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding-bottom: 4px;
-        }
-
-        .input-pill {
-            flex: 1;
-            background: var(--bg-secondary);
-            border: 0.5px solid var(--border);
-            border-radius: 20px;
-            padding: 8px 12px;
+        .input-group {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 10px;
         }
 
-        .ios-chat-input {
+        .ios-input {
             width: 100%;
-            background: transparent;
+            padding: 12px 14px;
+            border-radius: 10px;
             border: none;
-            outline: none;
+            background: var(--input-bg);
             color: var(--text-main);
-            font-size: 16px;
-            resize: none;
-            height: 24px;
-            max-height: 80px;
+            font-size: 14px;
+            outline: none;
         }
 
-        .send-pill-btn {
-            background: var(--bg-bubble-blue);
-            color: white;
-            border: none;
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
+        textarea.ios-input {
+            resize: none;
+            height: 64px;
+        }
+
+        .attachment-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-label {
+            background: var(--input-bg);
+            color: var(--text-main);
+            padding: 12px;
+            border-radius: 10px;
             font-size: 16px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            flex-shrink: 0;
+            width: 45px;
+            height: 45px;
             transition: opacity 0.1s;
         }
 
-        .send-pill-btn:disabled {
-            opacity: 0.3;
+        .file-label:active {
+            opacity: 0.6;
         }
 
-        /* Live image upload preview thumbnail styling */
-        .bar-preview-box {
+        .preview-container {
             display: none;
             position: relative;
+            align-self: flex-start;
+            margin-bottom: 4px;
+        }
+
+        .img-preview {
             width: 50px;
             height: 50px;
-        }
-
-        .bar-preview-img {
-            width: 100%;
-            height: 100%;
             object-fit: cover;
             border-radius: 8px;
+            border: 1px solid var(--border);
         }
 
-        .bar-preview-close {
+        .remove-preview {
             position: absolute;
-            top: -4px;
-            right: -4px;
-            background: rgba(0,0,0,0.5);
+            top: -6px;
+            right: -6px;
+            background: #ff3b30;
             color: white;
-            border-radius: 50%;
             border: none;
+            border-radius: 50%;
             width: 16px;
             height: 16px;
             font-size: 10px;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ios-btn {
+            flex: 1;
+            background-color: var(--btn-bg);
+            color: var(--btn-text);
+            border: none;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            height: 45px;
+            transition: opacity 0.1s, transform 0.1s;
+        }
+
+        .ios-btn:active {
+            opacity: 0.8;
+            transform: scale(0.99);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 <body>
 
-<div class="phone-wrapper">
+<div class="app-container">
 
-    <div class="view" id="listExtensionView">
+    <!-- VIEW 1: Contacts/Conversations Thread Deck -->
+    <div class="view" id="listView">
         <div class="ios-navbar list-header">
-            <div class="list-header-top">
-                <span>Edit</span>
-                <span>📝</span>
-            </div>
-            <h1 class="list-title">Messages</h1>
-        </div>
-        <div class="search-bar-container">
-            <input type="text" class="search-bar" placeholder="Search" disabled>
+            <h1>Messages</h1>
+            <p>Anonymous and secure</p>
         </div>
         <div class="conversation-list" id="threadContainer">
-            </div>
+            <!-- Dynamic contacts rendering -->
+        </div>
     </div>
 
-    <div class="view" id="chatDetailView">
+    <!-- VIEW 2: Chat Stream Room View -->
+    <div class="view" id="chatView">
         <div class="ios-navbar chat-navbar">
-            <button class="back-btn" id="backToDeckBtn">◀ Messages</button>
-            <div class="chat-target-meta">
-                <div class="avatar" style="width:30px; height:30px; font-size:12px; margin:0 auto;" id="chatNavAvatar">CA</div>
-                <div class="chat-target-name" id="chatNavName">Christian Abustan</div>
+            <button class="back-btn" id="backBtn">◀ Back</button>
+            <div class="chat-title-container">
+                <div class="chat-title-main" id="chatTitle">Christian Abustan</div>
             </div>
             <div style="width: 40px;"></div>
         </div>
 
-        <div class="chat-feed" id="chatFeedWindow">
-            </div>
+        <div class="feed" id="messageFeed">
+            <!-- Restored clean text message layout components render here -->
+        </div>
 
-        <form class="ios-input-bar" id="chatActionForm">
-            <label for="chatMediaFile" class="camera-btn">📷</label>
-            <input type="file" id="chatMediaFile" accept="image/*" style="display:none;">
-            
-            <div class="input-pill">
-                <div class="bar-preview-box" id="barPreview">
-                    <img src="" id="barPreviewImg" class="bar-preview-img">
-                    <button type="button" class="bar-preview-close" id="barPreviewClose">×</button>
+        <div class="input-area">
+            <form id="messageForm" class="input-group">
+                <div class="preview-container" id="previewContainer">
+                    <img src="" id="imgPreview" class="img-preview">
+                    <button type="button" class="remove-preview" id="removePreviewBtn">×</button>
                 </div>
-                <textarea class="ios-chat-input" id="chatTextField" placeholder="iMessage" required></textarea>
-            </div>
-            
-            <button type="submit" class="send-pill-btn" id="sendBtnDeck">⬆</button>
-        </form>
+
+                <div class="attachment-row">
+                    <label for="imageInput" class="file-label">🖼️</label>
+                    <input type="file" id="imageInput" accept="image/*" style="display: none;">
+                    
+                    <textarea id="messageInput" class="ios-input" placeholder="Write a message..." required maxlength="300"></textarea>
+                    <button type="submit" id="submitBtn" class="ios-btn">Send</button>
+                </div>
+            </form>
+        </div>
     </div>
 
 </div>
@@ -436,77 +431,63 @@
     const SUPABASE_ANON_KEY = 'sb_publishable_Q-MoQP1-Assz9V9UJQP4LQ_q7E8GowV';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Dom routing registry
-    const listExtensionView = document.getElementById('listExtensionView');
-    const chatDetailView = document.getElementById('chatDetailView');
+    // Dom Registries
+    const listView = document.getElementById('listView');
+    const chatView = document.getElementById('chatView');
     const threadContainer = document.getElementById('threadContainer');
-    const chatFeedWindow = document.getElementById('chatFeedWindow');
-    const backToDeckBtn = document.getElementById('backToDeckBtn');
-    const chatActionForm = document.getElementById('chatActionForm');
-    const chatTextField = document.getElementById('chatTextField');
-    const chatMediaFile = document.getElementById('chatMediaFile');
-    
-    const barPreview = document.getElementById('barPreview');
-    const barPreviewImg = document.getElementById('barPreviewImg');
-    const barPreviewClose = document.getElementById('barPreviewClose');
-    const sendBtnDeck = document.getElementById('sendBtnDeck');
+    const messageFeed = document.getElementById('messageFeed');
+    const backBtn = document.getElementById('backBtn');
+    const chatTitle = document.getElementById('chatTitle');
 
-    const chatNavAvatar = document.getElementById('chatNavAvatar');
-    const chatNavName = document.getElementById('chatNavName');
+    const messageForm = document.getElementById('messageForm');
+    const messageInput = document.getElementById('messageInput');
+    const submitBtn = document.getElementById('submitBtn');
+    const imageInput = document.getElementById('imageInput');
+    const previewContainer = document.getElementById('previewContainer');
+    const imgPreview = document.getElementById('imgPreview');
+    const removePreviewBtn = document.getElementById('removePreviewBtn');
 
-    let currentActiveThread = "Christian Abustan"; 
+    let currentActiveThread = "Christian Abustan";
     let allGlobalMessages = [];
-    let selectedImageFile = null;
+    let selectedFile = null;
 
-    // Monitor input dynamic size growth to mimic iMessage framework expansion
-    chatTextField.addEventListener('input', function() {
-        this.style.height = '24px';
-        this.style.height = (this.scrollHeight - 10) + 'px';
-    });
-
-    // Attachment thumbnail triggers
-    chatMediaFile.addEventListener('change', (e) => {
+    // Handle Media Selection
+    imageInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
-        if(file) {
-            selectedImageFile = file;
-            barPreviewImg.src = URL.createObjectURL(file);
-            barPreview.style.display = 'block';
+        if (file) {
+            selectedFile = file;
+            imgPreview.src = URL.createObjectURL(file);
+            previewContainer.style.display = 'block';
         }
     });
 
-    barPreviewClose.addEventListener('click', () => {
-        selectedImageFile = null;
-        chatMediaFile.value = '';
-        barPreview.style.display = 'none';
-        barPreviewImg.src = '';
+    removePreviewBtn.addEventListener('click', () => {
+        selectedFile = null;
+        imageInput.value = '';
+        previewContainer.style.display = 'none';
+        imgPreview.src = '';
     });
 
-    // Handle View Navigation
-    backToDeckBtn.addEventListener('click', () => {
-        chatDetailView.classList.remove('slide-in');
-        listExtensionView.classList.remove('slide-out');
+    // Navigation triggers
+    backBtn.addEventListener('click', () => {
+        chatView.classList.remove('slide-in');
+        listView.classList.remove('slide-out');
     });
 
     function navigateToChat(codename) {
         currentActiveThread = codename;
-        chatNavName.innerText = codename;
-        
-        // Setup initial initials icon
-        const initialStr = codename.trim().substring(0, 2);
-        chatNavAvatar.innerText = initialStr;
-
-        renderChatBubbles();
-        
-        listExtensionView.classList.add('slide-out');
-        chatDetailView.classList.add('slide-in');
+        chatTitle.innerText = codename;
+        renderActiveChatMessages();
+        listView.classList.add('slide-out');
+        chatView.classList.add('slide-in');
     }
 
-    // Engine sorting logic: aggregates incoming items dynamically by user handle
-    async function syncSystemLogs() {
+    // Sync from database
+    async function fetchSystemLogs() {
         const { data, error } = await supabaseClient
             .from('messages')
             .select('*')
-            .order('created_at', { ascending: true });
+            .order('id', { ascending: true });
 
         if (error) {
             console.error(error);
@@ -515,16 +496,15 @@
 
         allGlobalMessages = data || [];
         renderThreadDeck();
-        if(chatDetailView.classList.contains('slide-in')) {
-            renderChatBubbles();
+        if (chatView.classList.contains('slide-in')) {
+            renderActiveChatMessages();
         }
     }
 
     function renderThreadDeck() {
-        // Group unique profiles by tracking codenames 
         const threadsMap = {};
 
-        // Always force primary identity creation initialization
+        // Hardcoded primary point target anchor template setup
         threadsMap["Christian Abustan"] = {
             codename: "Christian Abustan",
             text: "Tap here to leave an anonymous note...",
@@ -535,19 +515,18 @@
             threadsMap[msg.codename] = msg;
         });
 
-        // Sort by chronological activity logs
-        const sortedThreads = Object.values(threadsMap).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
-        
+        const sortedThreads = Object.values(threadsMap).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
         threadContainer.innerHTML = '';
         sortedThreads.forEach(th => {
+            const initials = th.codename.substring(0, 2).toUpperCase();
             const date = new Date(th.created_at);
             const timeLabel = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            const initials = th.codename.substring(0,2);
 
-            const item = document.createElement('div');
-            item.className = 'thread-item';
-            item.innerHTML = `
-                <div class="avatar"><span class="avatar-initials">${escapeHTML(initials)}</span></div>
+            const div = document.createElement('div');
+            div.className = 'thread-item';
+            div.innerHTML = `
+                <div class="avatar"><span>${escapeHTML(initials)}</span></div>
                 <div class="thread-details">
                     <div class="thread-meta">
                         <span class="thread-name">${escapeHTML(th.codename)}</span>
@@ -556,75 +535,66 @@
                     <div class="thread-preview">${escapeHTML(th.text || "Sent an image")}</div>
                 </div>
             `;
-            item.addEventListener('click', () => navigateToChat(th.codename));
-            threadContainer.appendChild(item);
+            div.addEventListener('click', () => navigateToChat(th.codename));
+            threadContainer.appendChild(div);
         });
     }
 
-    function renderChatBubbles() {
-        chatFeedWindow.innerHTML = '';
-        
-        // Filter elements belonging exclusively to this room channel
+    // RESTORED: Original clean text-card message layout framework parser 
+    function renderActiveChatMessages() {
+        messageFeed.innerHTML = '';
         const subset = allGlobalMessages.filter(m => m.codename === currentActiveThread);
 
-        if(subset.length === 0) {
-            chatFeedWindow.innerHTML = `<div class="date-divider">No Messages Yet</div>`;
+        if (subset.length === 0) {
+            messageFeed.innerHTML = `<div class="empty-state">No messages yet.</div>`;
             return;
         }
 
-        let lastDateString = "";
-
         subset.forEach(msg => {
-            const timestamp = new Date(msg.created_at);
-            
-            // Generate clean date dividers like standard iMessage
-            const dateDividerText = timestamp.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
-            if (dateDividerText !== lastDateString) {
-                const div = document.createElement('div');
-                div.className = 'date-divider';
-                div.innerText = `${dateDividerText} • ${timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
-                chatFeedWindow.appendChild(div);
-                lastDateString = dateDividerText;
-            }
+            const card = document.createElement('div');
+            card.className = 'message-card';
 
-            const row = document.createElement('div');
-            // If it is the default prompt message, keep it left-aligned; incoming posts display as native right-aligned bubbles
-            const isBasePrompt = (msg.id === undefined || msg.text.includes("anonymous message space"));
-            row.className = `bubble-row ${isBasePrompt ? 'bubble-incoming' : 'bubble-outgoing'}`;
+            const dateStr = new Date(msg.created_at).toLocaleDateString([], {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
 
-            let imgPayload = '';
+            let imageHTML = '';
             if (msg.image_url) {
-                imgPayload = `<img src="${msg.image_url}" class="bubble-image" alt="User upload file asset">`;
+                imageHTML = `<img src="${msg.image_url}" class="message-image" alt="uploaded file">`;
             }
 
-            row.innerHTML = `
-                <div class="bubble">
-                    ${imgPayload}
-                    <div>${escapeHTML(msg.text)}</div>
-                </div>
+            card.innerHTML = `
+                ${imageHTML}
+                <div class="message-text">${escapeHTML(msg.text)}</div>
+                <div class="message-meta">@${escapeHTML(msg.codename)} • ${dateStr}</div>
             `;
-            chatFeedWindow.appendChild(row);
+            messageFeed.appendChild(card);
         });
 
-        chatFeedWindow.scrollTop = chatFeedWindow.scrollHeight;
+        messageFeed.scrollTop = messageFeed.scrollHeight;
     }
 
-    // Process Message Form Delivery Action
-    chatActionForm.addEventListener('submit', async (e) => {
+    // Process Forms
+    messageForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const text = chatTextField.value.trim();
-        if(!text && !selectedImageFile) return;
+        const text = messageInput.value.trim();
+        if (!text && !selectedFile) return;
 
-        sendBtnDeck.disabled = true;
+        submitBtn.disabled = true;
+        submitBtn.innerText = "..";
+
         let image_url = null;
 
-        if (selectedImageFile) {
-            const ext = selectedImageFile.name.split('.').pop();
+        if (selectedFile) {
+            const ext = selectedFile.name.split('.').pop();
             const path = `${Math.random().toString(36).substring(2)}-${Date.now()}.${ext}`;
 
             const { error: uploadError } = await supabaseClient.storage
                 .from('message-images')
-                .upload(path, selectedImageFile);
+                .upload(path, selectedFile);
 
             if (!uploadError) {
                 const { data } = supabaseClient.storage.from('message-images').getPublicUrl(path);
@@ -636,17 +606,17 @@
             .from('messages')
             .insert([{ codename: currentActiveThread, text: text, image_url: image_url }]);
 
-        sendBtnDeck.disabled = false;
+        submitBtn.disabled = false;
+        submitBtn.innerText = "Send";
 
         if (!error) {
-            chatTextField.value = '';
-            chatTextField.style.height = '24px';
-            selectedImageFile = null;
-            barPreview.style.display = 'none';
-            barPreviewImg.src = '';
-            syncSystemLogs();
+            messageInput.value = '';
+            selectedFile = null;
+            previewContainer.style.display = 'none';
+            imgPreview.src = '';
+            fetchSystemLogs();
         } else {
-            alert("Error sending message.");
+            alert("Could not send message.");
         }
     });
 
@@ -654,9 +624,8 @@
         return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
     }
 
-    // Engine Polling Intervals
-    syncSystemLogs();
-    setInterval(syncSystemLogs, 8000);
+    fetchSystemLogs();
+    setInterval(fetchSystemLogs, 8000);
 </script>
 
 </body>
