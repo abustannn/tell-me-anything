@@ -312,6 +312,19 @@
             gap: 10px;
         }
 
+        /* Identity locked overlay card styling */
+        .identity-lock-banner {
+            display: none;
+            background: rgba(0, 122, 255, 0.1);
+            color: var(--accent);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            text-align: center;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
         .ios-input {
             width: 100%;
             padding: 12px 14px;
@@ -326,6 +339,11 @@
         textarea.ios-input {
             resize: none;
             height: 64px;
+        }
+
+        textarea.ios-input:disabled {
+            opacity: 0.6;
+            cursor: pointer;
         }
 
         .attachment-row {
@@ -349,8 +367,9 @@
             transition: opacity 0.1s;
         }
 
-        .file-label:active {
-            opacity: 0.6;
+        .file-label.disabled {
+            opacity: 0.4;
+            pointer-events: none;
         }
 
         .preview-container {
@@ -399,9 +418,9 @@
             transition: opacity 0.1s, transform 0.1s;
         }
 
-        .ios-btn:active {
-            opacity: 0.8;
-            transform: scale(0.99);
+        .ios-btn:disabled {
+            opacity: 0.4;
+            pointer-events: none;
         }
 
         /* Passcode Security Sheet Layer Overlay */
@@ -537,13 +556,18 @@
 
         <div class="input-area">
             <form id="messageForm" class="input-group">
+                <!-- Identity locked helper context indicator banner -->
+                <div class="identity-lock-banner" id="identityLockBanner">
+                    Active Codename: None (Tap to add)
+                </div>
+
                 <div class="preview-container" id="previewContainer">
                     <img src="" id="imgPreview" class="img-preview">
                     <button type="button" class="remove-preview" id="removePreviewBtn">×</button>
                 </div>
 
                 <div class="attachment-row">
-                    <label for="imageInput" class="file-label">🖼️</label>
+                    <label for="imageInput" class="file-label" id="fileLabelBtn">🖼️</label>
                     <input type="file" id="imageInput" accept="image/*" style="display: none;">
                     
                     <textarea id="messageInput" class="ios-input" placeholder="Write a message..." required maxlength="300"></textarea>
@@ -573,9 +597,11 @@
     const messageInput = document.getElementById('messageInput');
     const submitBtn = document.getElementById('submitBtn');
     const imageInput = document.getElementById('imageInput');
+    const fileLabelBtn = document.getElementById('fileLabelBtn');
     const previewContainer = document.getElementById('previewContainer');
     const imgPreview = document.getElementById('imgPreview');
     const removePreviewBtn = document.getElementById('removePreviewBtn');
+    const identityLockBanner = document.getElementById('identityLockBanner');
 
     // Security Gate Registry
     const lockOverlay = document.getElementById('lockOverlay');
@@ -588,7 +614,8 @@
     let allGlobalMessages = [];
     let selectedFile = null;
     
-    // Memory tracker for locally added empty codename threads
+    // User variable trackers
+    let savedUserCodenameForChristian = "";
     let customEmptyThreads = [];
 
     // Lock definitions schema configurations
@@ -624,13 +651,11 @@
         const targetLower = codename.trim().toLowerCase();
         
         if (PROTECTED_THREADS[targetLower]) {
-            // Trigger Passcode Gate Overlay
             lockTargetTitle.innerText = `Enter Passcode for ${codename}`;
             passcodeInput.value = '';
             lockOverlay.style.display = 'flex';
             setTimeout(() => lockOverlay.classList.add('active'), 10);
             
-            // Intercept route execution state
             passcodeBtn.onclick = () => {
                 if (passcodeInput.value === PROTECTED_THREADS[targetLower].pin) {
                     dismissSecurityGate();
@@ -643,7 +668,6 @@
             return;
         }
 
-        // Default thread pass-through route
         navigateToChat(codename);
     }
 
@@ -657,10 +681,57 @@
     function navigateToChat(codename) {
         currentActiveThread = codename;
         chatTitle.innerText = codename;
+        
+        updateInputLockState();
         renderActiveChatMessages();
+        
         listView.classList.add('slide-out');
         chatView.classList.add('slide-in');
     }
+
+    // Evaluate input lockout rule conditions specifically for Christian Abustan
+    function updateInputLockState() {
+        if (currentActiveThread === "Christian Abustan") {
+            if (!savedUserCodenameForChristian) {
+                identityLockBanner.style.display = 'block';
+                identityLockBanner.innerText = "⚠️ Required: Choose your sender codename before typing...";
+                messageInput.placeholder = "Tap the banner above to unlock and add codename...";
+                messageInput.disabled = true;
+                submitBtn.disabled = true;
+                fileLabelBtn.classList.add('disabled');
+            } else {
+                identityLockBanner.style.display = 'block';
+                identityLockBanner.innerText = `Sending anonymously as: @${savedUserCodenameForChristian} (Tap to change)`;
+                messageInput.placeholder = "Write an anonymous message...";
+                messageInput.disabled = false;
+                submitBtn.disabled = false;
+                fileLabelBtn.classList.remove('disabled');
+            }
+        } else {
+            // Standard threads don't require external identity setups
+            identityLockBanner.style.display = 'none';
+            messageInput.placeholder = "Write a message...";
+            messageInput.disabled = false;
+            submitBtn.disabled = false;
+            fileLabelBtn.classList.remove('disabled');
+        }
+    }
+
+    // Code assignment prompts
+    function triggerCodenameSetupPrompt() {
+        const alias = prompt("Enter your custom sender Codename for this message:");
+        if (alias && alias.trim().length > 0) {
+            savedUserCodenameForChristian = alias.trim();
+            updateInputLockState();
+        }
+    }
+
+    identityLockBanner.addEventListener('click', triggerCodenameSetupPrompt);
+    messageInput.addEventListener('click', () => {
+        if (messageInput.disabled && currentActiveThread === "Christian Abustan") {
+            triggerCodenameSetupPrompt();
+        }
+    });
 
     // Add new custom thread/contact handler
     addNewContactBtn.addEventListener('click', () => {
@@ -708,7 +779,6 @@
             created_at: new Date().toISOString()
         };
 
-        // Inject manually created codenames into map
         customEmptyThreads.forEach(name => {
             threadsMap[name] = {
                 codename: name,
@@ -717,21 +787,29 @@
             };
         });
 
-        // Map database records over memory arrays
         allGlobalMessages.forEach(msg => {
-            threadsMap[msg.codename] = msg;
+            // Keep public messages under Christian Abustan stacked inside the root thread
+            if (msg.codename !== "Christian Abustan") {
+                threadsMap[msg.codename] = msg;
+            } else {
+                // Pin newest reply preview text to Christian's card
+                if (new Date(msg.created_at) > new Date(threadsMap["Christian Abustan"].created_at) || threadsMap["Christian Abustan"].id === undefined) {
+                    threadsMap["Christian Abustan"] = msg;
+                }
+            }
         });
 
         const sortedThreads = Object.values(threadsMap).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
         threadContainer.innerHTML = '';
         sortedThreads.forEach(th => {
-            const initials = th.codename.substring(0, 2).toUpperCase();
+            // Ensure visual profile always highlights true name context
+            const displayName = th.codename === "Christian Abustan" ? "Christian Abustan" : th.codename;
+            const initials = displayName.substring(0, 2).toUpperCase();
             const date = new Date(th.created_at);
             const timeLabel = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             
-            // Render lock status icons on protected channels
-            const isLocked = !!PROTECTED_THREADS[th.codename.trim().toLowerCase()];
+            const isLocked = !!PROTECTED_THREADS[displayName.trim().toLowerCase()];
             const lockIndicator = isLocked ? '<span class="lock-badge">🔒</span>' : '';
 
             const div = document.createElement('div');
@@ -740,13 +818,13 @@
                 <div class="avatar"><span>${escapeHTML(initials)}</span></div>
                 <div class="thread-details">
                     <div class="thread-meta">
-                        <span class="thread-name">${escapeHTML(th.codename)} ${lockIndicator}</span>
+                        <span class="thread-name">${escapeHTML(displayName)} ${lockIndicator}</span>
                         <span class="thread-time">${timeLabel}</span>
                     </div>
                     <div class="thread-preview">${isLocked ? '<i>Thread is Passcode Protected</i>' : escapeHTML(th.text || "Sent an image")}</div>
                 </div>
             `;
-            div.addEventListener('click', () => handleThreadSelection(th.codename));
+            div.addEventListener('click', () => handleThreadSelection(displayName));
             threadContainer.appendChild(div);
         });
     }
@@ -756,7 +834,7 @@
         messageFeed.innerHTML = '';
         const subset = allGlobalMessages.filter(m => m.codename === currentActiveThread);
 
-        if (subset.length === 0) {
+        if (subset.length === 0 && currentActiveThread !== "Christian Abustan") {
             const card = document.createElement('div');
             card.className = 'message-card prompt-card';
             card.innerHTML = `
@@ -764,6 +842,9 @@
                 <div class="message-meta">System Prompt</div>
             `;
             messageFeed.appendChild(card);
+            return;
+        } else if (subset.length === 0 && currentActiveThread === "Christian Abustan") {
+            messageFeed.innerHTML = `<div class="empty-state">No public anonymous messages left yet. Be the first!</div>`;
             return;
         }
 
@@ -783,10 +864,13 @@
                 imageHTML = `<img src="${msg.image_url}" class="message-image" alt="uploaded file">`;
             }
 
+            // If it is inside Christian's feed, append meta metadata tag identifying message authors
+            const secondaryAuthorTag = msg.author_alias ? `via @${msg.author_alias}` : `@${msg.codename}`;
+
             card.innerHTML = `
                 ${imageHTML}
                 <div class="message-text">${escapeHTML(msg.text)}</div>
-                <div class="message-meta">@${escapeHTML(msg.codename)} • ${dateStr}</div>
+                <div class="message-meta">${escapeHTML(secondaryAuthorTag)} • ${dateStr}</div>
             `;
             messageFeed.appendChild(card);
         });
@@ -799,6 +883,12 @@
         e.preventDefault();
         const text = messageInput.value.trim();
         if (!text && !selectedFile) return;
+
+        // Double check submission intercept validation rules
+        if (currentActiveThread === "Christian Abustan" && !savedUserCodenameForChristian) {
+            triggerCodenameSetupPrompt();
+            return;
+        }
 
         submitBtn.disabled = true;
         submitBtn.innerText = "..";
@@ -819,9 +909,17 @@
             }
         }
 
+        // For Christian, store it under his root room record but log the custom tracking sender handle inside 'author_alias'
+        const dbPayload = {
+            codename: currentActiveThread,
+            text: text,
+            image_url: image_url,
+            author_alias: currentActiveThread === "Christian Abustan" ? savedUserCodenameForChristian : null
+        };
+
         const { error } = await supabaseClient
             .from('messages')
-            .insert([{ codename: currentActiveThread, text: text, image_url: image_url }]);
+            .insert([dbPayload]);
 
         submitBtn.disabled = false;
         submitBtn.innerText = "Send";
@@ -840,7 +938,7 @@
     });
 
     function escapeHTML(str) {
-        return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+        return str ? str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)) : '';
     }
 
     fetchSystemLogs();
