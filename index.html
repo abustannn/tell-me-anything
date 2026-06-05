@@ -18,6 +18,8 @@
             --btn-bg: #1c1c1e;
             --btn-text: #ffffff;
             --nav-bg: rgba(255, 255, 255, 0.85);
+            --accent: #007aff;
+            --danger: #ff3b30;
         }
 
         @media (prefers-color-scheme: dark) {
@@ -31,6 +33,8 @@
                 --btn-bg: #ffffff;
                 --btn-text: #1c1c1e;
                 --nav-bg: rgba(28, 28, 30, 0.85);
+                --accent: #0a84ff;
+                --danger: #ff453a;
             }
         }
 
@@ -110,12 +114,30 @@
             align-items: flex-start;
             padding-top: 24px;
             padding-bottom: 16px;
+            width: 100%;
+        }
+
+        .list-header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 8px;
+        }
+
+        .compose-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--accent);
+            outline: none;
         }
 
         .list-header h1 {
-            font-size: 20px;
-            font-weight: 600;
-            letter-spacing: -0.3px;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
         }
 
         .list-header p {
@@ -187,13 +209,19 @@
             text-overflow: ellipsis;
         }
 
+        /* Lock Icon badge */
+        .lock-badge {
+            font-size: 12px;
+            margin-left: 4px;
+        }
+
         /* Chat View Elements */
         .chat-navbar {
             justify-content: space-between;
         }
 
         .back-btn {
-            color: var(--text-main);
+            color: var(--accent);
             font-weight: 500;
             cursor: pointer;
             display: flex;
@@ -216,7 +244,7 @@
             font-weight: 600;
         }
 
-        /* RESTORED: Original Message Feed Cards Style */
+        /* Message Feed Cards Style */
         .feed {
             flex: 1;
             overflow-y: auto;
@@ -252,6 +280,11 @@
             word-break: break-word;
         }
 
+        .message-card.prompt-card .message-text {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
         .message-meta {
             font-size: 11px;
             color: var(--text-muted);
@@ -266,7 +299,7 @@
             font-size: 14px;
         }
 
-        /* RESTORED: Original Input Composition Area */
+        /* Input Composition Area */
         .input-area {
             padding: 16px;
             border-top: 1px solid var(--border);
@@ -339,7 +372,7 @@
             position: absolute;
             top: -6px;
             right: -6px;
-            background: #ff3b30;
+            background: var(--danger);
             color: white;
             border: none;
             border-radius: 50%;
@@ -371,6 +404,86 @@
             transform: scale(0.99);
         }
 
+        /* Passcode Security Sheet Layer Overlay */
+        .lock-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-container);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.1, 1, 0.1, 1);
+        }
+
+        .lock-overlay.active {
+            display: flex;
+            transform: translateY(0);
+        }
+
+        .lock-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            letter-spacing: -0.4px;
+        }
+
+        .lock-hint {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+            background: var(--input-bg);
+            padding: 6px 12px;
+            border-radius: 6px;
+        }
+
+        .lock-input {
+            width: 160px;
+            text-align: center;
+            font-size: 24px;
+            letter-spacing: 6px;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--input-bg);
+            color: var(--text-main);
+            outline: none;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .lock-actions {
+            display: flex;
+            gap: 12px;
+            width: 160px;
+        }
+
+        .lock-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .lock-btn-cancel {
+            background: transparent;
+            color: var(--accent);
+        }
+
+        .lock-btn-submit {
+            background: var(--btn-bg);
+            color: var(--btn-text);
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(5px); }
             to { opacity: 1; transform: translateY(0); }
@@ -381,9 +494,25 @@
 
 <div class="app-container">
 
+    <!-- SECURITY SHEET: Passcode Shield Intercept Gate -->
+    <div class="lock-overlay" id="lockOverlay">
+        <div style="font-size: 40px; margin-bottom: 16px;">🔒</div>
+        <div class="lock-title" id="lockTargetTitle">Thread Locked</div>
+        <div class="lock-hint" id="lockHintField">Hint: birthdate</div>
+        <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" class="lock-input" id="passcodeInput" placeholder="••••••">
+        <div class="lock-actions">
+            <button type="button" class="lock-btn lock-btn-cancel" id="lockCancelBtn">Cancel</button>
+            <button type="button" class="lock-btn lock-btn-submit" id="lockSubmitBtn">Enter</button>
+        </div>
+    </div>
+
     <!-- VIEW 1: Contacts/Conversations Thread Deck -->
     <div class="view" id="listView">
         <div class="ios-navbar list-header">
+            <div class="list-header-top">
+                <span style="color: var(--accent); font-size: 15px;">Edit</span>
+                <button class="compose-btn" id="addNewContactBtn">📝</button>
+            </div>
             <h1>Messages</h1>
             <p>Anonymous and secure</p>
         </div>
@@ -395,7 +524,7 @@
     <!-- VIEW 2: Chat Stream Room View -->
     <div class="view" id="chatView">
         <div class="ios-navbar chat-navbar">
-            <button class="back-btn" id="backBtn">< Back</button>
+            <button class="back-btn" id="backBtn">◀ Messages</button>
             <div class="chat-title-container">
                 <div class="chat-title-main" id="chatTitle">Christian Abustan</div>
             </div>
@@ -403,7 +532,7 @@
         </div>
 
         <div class="feed" id="messageFeed">
-            <!-- Restored clean text message layout components render here -->
+            <!-- Message cards render here -->
         </div>
 
         <div class="input-area">
@@ -438,6 +567,7 @@
     const messageFeed = document.getElementById('messageFeed');
     const backBtn = document.getElementById('backBtn');
     const chatTitle = document.getElementById('chatTitle');
+    const addNewContactBtn = document.getElementById('addNewContactBtn');
 
     const messageForm = document.getElementById('messageForm');
     const messageInput = document.getElementById('messageInput');
@@ -447,9 +577,24 @@
     const imgPreview = document.getElementById('imgPreview');
     const removePreviewBtn = document.getElementById('removePreviewBtn');
 
+    // Security Gate Registry
+    const lockOverlay = document.getElementById('lockOverlay');
+    const lockTargetTitle = document.getElementById('lockTargetTitle');
+    const passcodeBtn = document.getElementById('lockSubmitBtn');
+    const passcodeCancelBtn = document.getElementById('lockCancelBtn');
+    const passcodeInput = document.getElementById('passcodeInput');
+
     let currentActiveThread = "Christian Abustan";
     let allGlobalMessages = [];
     let selectedFile = null;
+    
+    // Memory tracker for locally added empty codename threads
+    let customEmptyThreads = [];
+
+    // Lock definitions schema configurations
+    const PROTECTED_THREADS = {
+        "eren": { pin: "052506", hint: "birthdate" }
+    };
 
     // Handle Media Selection
     imageInput.addEventListener('change', (e) => {
@@ -474,6 +619,41 @@
         listView.classList.remove('slide-out');
     });
 
+    // Gate entry verification
+    function handleThreadSelection(codename) {
+        const targetLower = codename.trim().toLowerCase();
+        
+        if (PROTECTED_THREADS[targetLower]) {
+            // Trigger Passcode Gate Overlay
+            lockTargetTitle.innerText = `Enter Passcode for ${codename}`;
+            passcodeInput.value = '';
+            lockOverlay.style.display = 'flex';
+            setTimeout(() => lockOverlay.classList.add('active'), 10);
+            
+            // Intercept route execution state
+            passcodeBtn.onclick = () => {
+                if (passcodeInput.value === PROTECTED_THREADS[targetLower].pin) {
+                    dismissSecurityGate();
+                    navigateToChat(codename);
+                } else {
+                    alert("Incorrect Passcode!");
+                    passcodeInput.value = '';
+                }
+            };
+            return;
+        }
+
+        // Default thread pass-through route
+        navigateToChat(codename);
+    }
+
+    function dismissSecurityGate() {
+        lockOverlay.classList.remove('active');
+        setTimeout(() => lockOverlay.style.display = 'none', 300);
+    }
+
+    passcodeCancelBtn.addEventListener('click', dismissSecurityGate);
+
     function navigateToChat(codename) {
         currentActiveThread = codename;
         chatTitle.innerText = codename;
@@ -481,6 +661,23 @@
         listView.classList.add('slide-out');
         chatView.classList.add('slide-in');
     }
+
+    // Add new custom thread/contact handler
+    addNewContactBtn.addEventListener('click', () => {
+        const name = prompt("Enter new Contact name or Codename:");
+        if (name && name.trim().length > 0) {
+            const formattedName = name.trim();
+            
+            const threadExists = allGlobalMessages.some(m => m.codename.toLowerCase() === formattedName.toLowerCase()) || 
+                                 customEmptyThreads.includes(formattedName);
+            
+            if (!threadExists) {
+                customEmptyThreads.push(formattedName);
+                renderThreadDeck();
+            }
+            handleThreadSelection(formattedName);
+        }
+    });
 
     // Sync from database
     async function fetchSystemLogs() {
@@ -504,13 +701,23 @@
     function renderThreadDeck() {
         const threadsMap = {};
 
-        // Hardcoded primary point target anchor template setup
+        // Primary placeholder deck anchors
         threadsMap["Christian Abustan"] = {
             codename: "Christian Abustan",
             text: "Tap here to leave an anonymous note...",
             created_at: new Date().toISOString()
         };
 
+        // Inject manually created codenames into map
+        customEmptyThreads.forEach(name => {
+            threadsMap[name] = {
+                codename: name,
+                text: "No messages yet. Tap to start writing...",
+                created_at: new Date().toISOString()
+            };
+        });
+
+        // Map database records over memory arrays
         allGlobalMessages.forEach(msg => {
             threadsMap[msg.codename] = msg;
         });
@@ -522,6 +729,10 @@
             const initials = th.codename.substring(0, 2).toUpperCase();
             const date = new Date(th.created_at);
             const timeLabel = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            // Render lock status icons on protected channels
+            const isLocked = !!PROTECTED_THREADS[th.codename.trim().toLowerCase()];
+            const lockIndicator = isLocked ? '<span class="lock-badge">🔒</span>' : '';
 
             const div = document.createElement('div');
             div.className = 'thread-item';
@@ -529,24 +740,30 @@
                 <div class="avatar"><span>${escapeHTML(initials)}</span></div>
                 <div class="thread-details">
                     <div class="thread-meta">
-                        <span class="thread-name">${escapeHTML(th.codename)}</span>
+                        <span class="thread-name">${escapeHTML(th.codename)} ${lockIndicator}</span>
                         <span class="thread-time">${timeLabel}</span>
                     </div>
-                    <div class="thread-preview">${escapeHTML(th.text || "Sent an image")}</div>
+                    <div class="thread-preview">${isLocked ? '<i>Thread is Passcode Protected</i>' : escapeHTML(th.text || "Sent an image")}</div>
                 </div>
             `;
-            div.addEventListener('click', () => navigateToChat(th.codename));
+            div.addEventListener('click', () => handleThreadSelection(th.codename));
             threadContainer.appendChild(div);
         });
     }
 
-    // RESTORED: Original clean text-card message layout framework parser 
+    // Text message layout framework parser 
     function renderActiveChatMessages() {
         messageFeed.innerHTML = '';
         const subset = allGlobalMessages.filter(m => m.codename === currentActiveThread);
 
         if (subset.length === 0) {
-            messageFeed.innerHTML = `<div class="empty-state">No messages yet.</div>`;
+            const card = document.createElement('div');
+            card.className = 'message-card prompt-card';
+            card.innerHTML = `
+                <div class="message-text">This is the start of your anonymous message history with @${escapeHTML(currentActiveThread)}. Send a note below to save this thread permanently.</div>
+                <div class="message-meta">System Prompt</div>
+            `;
+            messageFeed.appendChild(card);
             return;
         }
 
@@ -610,6 +827,8 @@
         submitBtn.innerText = "Send";
 
         if (!error) {
+            customEmptyThreads = customEmptyThreads.filter(name => name !== currentActiveThread);
+            
             messageInput.value = '';
             selectedFile = null;
             previewContainer.style.display = 'none';
