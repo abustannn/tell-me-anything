@@ -93,8 +93,19 @@
 
         .message-card {
             align-self: flex-start;
-            max-width: 90%;
+            max-width: 85%;
             animation: fadeIn 0.25s ease-out;
+        }
+
+        .message-image {
+            width: 100%;
+            max-height: 200px;
+            object-fit: cover;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            margin-bottom: 6px;
+            display: block;
+            background-color: var(--input-bg);
         }
 
         .message-text {
@@ -146,7 +157,67 @@
             height: 64px;
         }
 
+        /* Interactive iOS attachment row */
+        .attachment-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-label {
+            background: var(--input-bg);
+            color: var(--text-main);
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 45px;
+            height: 45px;
+            transition: opacity 0.1s;
+        }
+
+        .file-label:active {
+            opacity: 0.6;
+        }
+
+        /* Tiny thumbnail preview look */
+        .preview-container {
+            display: none;
+            position: relative;
+            align-self: flex-start;
+            margin-bottom: 4px;
+        }
+
+        .img-preview {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .remove-preview {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: #ff3b30;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            font-size: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         .ios-btn {
+            flex: 1;
             background-color: var(--btn-bg);
             color: var(--btn-text);
             border: none;
@@ -155,6 +226,7 @@
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
+            height: 45px;
             transition: opacity 0.1s, transform 0.1s;
         }
 
@@ -185,23 +257,57 @@
         <form id="messageForm" class="input-group">
             <input type="text" id="codenameInput" class="ios-input" placeholder="Codename" required maxlength="20">
             <textarea id="messageInput" class="ios-input" placeholder="Write a message..." required maxlength="300"></textarea>
-            <button type="submit" id="submitBtn" class="ios-btn">Send</button>
+            
+            <div class="preview-container" id="previewContainer">
+                <img src="" id="imgPreview" class="img-preview">
+                <button type="button" class="remove-preview" id="removePreviewBtn">×</button>
+            </div>
+
+            <div class="attachment-row">
+                <label for="imageInput" class="file-label">🖼️</label>
+                <input type="file" id="imageInput" accept="image/*" style="display: none;">
+                
+                <button type="submit" id="submitBtn" class="ios-btn">Send</button>
+            </div>
         </form>
     </div>
 </div>
 
 <script>
-    // Your verified Supabase configurations
     const SUPABASE_URL = 'https://muxekpbcawffuvszaxmk.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_Q-MoQP1-Assz9V9UJQP4LQ_q7E8GowV';
     
-    // Initializing the client securely via CDN global context
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const messageForm = document.getElementById('messageForm');
     const messageFeed = document.getElementById('messageFeed');
     const emptyState = document.getElementById('emptyState');
     const submitBtn = document.getElementById('submitBtn');
+    
+    const imageInput = document.getElementById('imageInput');
+    const previewContainer = document.getElementById('previewContainer');
+    const imgPreview = document.getElementById('imgPreview');
+    const removePreviewBtn = document.getElementById('removePreviewBtn');
+
+    let selectedFile = null;
+
+    // Handle Image Selection and Generation of Thumbnail
+    imageInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            selectedFile = file;
+            imgPreview.src = URL.createObjectURL(file);
+            previewContainer.style.display = 'block';
+        }
+    });
+
+    // Handle Removing Selected Image Preview
+    removePreviewBtn.addEventListener('click', () => {
+        selectedFile = null;
+        imageInput.value = '';
+        previewContainer.style.display = 'none';
+        imgPreview.src = '';
+    });
 
     // Fetch messages live from Supabase
     async function fetchMessages() {
@@ -212,7 +318,7 @@
 
         if (error) {
             console.error('Error fetching data:', error);
-            emptyState.innerText = "Failed to load messages. Check console.";
+            emptyState.innerText = "Failed to load messages.";
             return;
         }
 
@@ -231,10 +337,16 @@
             const card = document.createElement('div');
             card.className = 'message-card';
             
-            // Format Timestamp
             const dateStr = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+            // Render image conditionally if it exists in the row data
+            let imageHTML = '';
+            if (msg.image_url) {
+                imageHTML = `<img src="${msg.image_url}" class="message-image" alt="uploaded graphic">`;
+            }
+
             card.innerHTML = `
+                ${imageHTML}
                 <div class="message-text">${escapeHTML(msg.text)}</div>
                 <div class="message-meta">@${escapeHTML(msg.codename)} • ${dateStr}</div>
             `;
@@ -244,7 +356,7 @@
         messageFeed.scrollTop = messageFeed.scrollHeight;
     }
 
-    // Insert new message into database
+    // Insert new message + upload image if attached
     messageForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
@@ -256,19 +368,46 @@
         submitBtn.disabled = true;
         submitBtn.innerText = "Sending...";
 
+        let image_url = null;
+
+        // If an image file is present, push to Bucket storage first
+        if (selectedFile) {
+            const fileExt = selectedFile.name.split('.').pop();
+            const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            const { error: uploadError } = await supabaseClient
+                .storage
+                .from('message-images')
+                .upload(filePath, selectedFile);
+
+            if (uploadError) {
+                console.error("Storage Error:", uploadError);
+                alert("Image fail to upload. Sending text only.");
+            } else {
+                // Generate raw public access URL asset link
+                const { data } = supabaseClient.storage.from('message-images').getPublicUrl(filePath);
+                image_url = data.publicUrl;
+            }
+        }
+
         const { error } = await supabaseClient
             .from('messages')
-            .insert([{ codename, text }]);
+            .insert([{ codename, text, image_url }]);
 
         submitBtn.disabled = false;
         submitBtn.innerText = "Send";
 
         if (error) {
-            alert('Could not send message. Try again!');
+            alert('Could not send message.');
             console.error(error);
         } else {
+            // Clean interface states
             document.getElementById('messageInput').value = '';
-            fetchMessages(); // Refresh UI
+            selectedFile = null;
+            previewContainer.style.display = 'none';
+            imgPreview.src = '';
+            fetchMessages(); 
         }
     });
 
@@ -276,10 +415,7 @@
         return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
     }
 
-    // Check data on load
     fetchMessages();
-    
-    // Check for updates every 10 seconds automatically
     setInterval(fetchMessages, 10000);
 </script>
 
