@@ -6,35 +6,23 @@
     <title>Messages</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* iOS Minimalist Monochrome Theme */
+        /* iOS Native Dark Theme Rules */
         :root {
-            --bg-global: #fafafa;
-            --bg-container: #ffffff;
-            --border: #e5e5ea;
-            --text-main: #000000;
+            --bg-global: #000000;
+            --bg-container: #000000;
+            --border: #1c1c1e;
+            --text-main: #ffffff;
             --text-muted: #8e8e93;
-            --input-bg: #f2f2f7;
-            --btn-bg: #1c1c1e;
-            --btn-text: #ffffff;
-            --nav-bg: rgba(255, 255, 255, 0.85);
-            --accent: #007aff;
-            --danger: #ff3b30;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg-global: #121212;
-                --bg-container: #1c1c1e;
-                --border: #2c2c2e;
-                --text-main: #ffffff;
-                --text-muted: #8e8e93;
-                --input-bg: #2c2c2e;
-                --btn-bg: #ffffff;
-                --btn-text: #1c1c1e;
-                --nav-bg: rgba(28, 28, 30, 0.85);
-                --accent: #0a84ff;
-                --danger: #ff453a;
-            }
+            --input-bg: #1c1c1e;
+            --btn-bg: #ffffff;
+            --btn-text: #000000;
+            --nav-bg: rgba(0, 0, 0, 0.75);
+            --accent: #0a84ff;
+            --danger: #ff453a;
+            
+            /* Chat Bubble Variants */
+            --bubble-outbound: linear-gradient(180deg, #2f96ff 0%, #007aff 100%);
+            --bubble-inbound: #262629;
         }
 
         * {
@@ -52,7 +40,6 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            transition: background-color 0.3s;
         }
 
         /* App Shell Frame Container */
@@ -72,7 +59,7 @@
                 height: 85vh;
                 border-radius: 24px;
                 border: 1px solid var(--border);
-                box-shadow: 0 4px 24px rgba(0,0,0,0.04);
+                box-shadow: 0 12px 40px rgba(0,0,0,0.5);
             }
         }
 
@@ -96,8 +83,8 @@
 
         /* iOS Translucent Navbar styling */
         .ios-navbar {
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
             background: var(--nav-bg);
             border-bottom: 1px solid var(--border);
             padding: 14px 16px;
@@ -111,9 +98,10 @@
         .list-header {
             flex-direction: column;
             align-items: flex-start;
-            padding-top: 24px;
-            padding-bottom: 16px;
+            padding-top: 16px;
+            padding-bottom: 12px;
             width: 100%;
+            gap: 10px;
         }
 
         .list-header-top {
@@ -121,28 +109,54 @@
             justify-content: space-between;
             align-items: center;
             width: 100%;
-            margin-bottom: 8px;
         }
 
         .compose-btn {
             background: none;
             border: none;
-            font-size: 20px;
+            font-size: 17px;
             cursor: pointer;
             color: var(--accent);
             outline: none;
+            font-weight: 500;
         }
 
         .list-header h1 {
-            font-size: 28px;
+            font-size: 32px;
             font-weight: 700;
             letter-spacing: -0.5px;
         }
 
-        .list-header p {
-            font-size: 13px;
-            color: var(--text-muted);
+        /* Native iOS Search Wrapper Field Architecture */
+        .search-wrapper {
+            width: 100%;
+            position: relative;
             margin-top: 2px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 8px 12px 8px 36px;
+            background: #1c1c1e;
+            border-radius: 10px;
+            border: none;
+            color: var(--text-main);
+            font-size: 16px;
+            outline: none;
+        }
+
+        .search-input::placeholder {
+            color: #8e8e93;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #8e8e93;
+            font-size: 14px;
+            pointer-events: none;
         }
 
         /* Conversation Thread Lists */
@@ -153,28 +167,28 @@
 
         .thread-item {
             display: flex;
-            padding: 16px 20px;
-            gap: 14px;
+            padding: 14px 16px;
+            gap: 12px;
             cursor: pointer;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid #1c1c1e;
             align-items: center;
         }
 
         .thread-item:active {
-            background-color: var(--input-bg);
+            background-color: #1c1c1e;
         }
 
         .avatar {
-            width: 44px;
-            height: 44px;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
-            background: var(--input-bg);
+            background: #2c2c2e;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 600;
             font-size: 16px;
-            color: var(--text-muted);
+            color: #ffffff;
             flex-shrink: 0;
         }
 
@@ -191,24 +205,23 @@
 
         .thread-name {
             font-weight: 600;
-            font-size: 15px;
+            font-size: 16px;
             color: var(--text-main);
         }
 
         .thread-time {
-            font-size: 12px;
+            font-size: 14px;
             color: var(--text-muted);
         }
 
         .thread-preview {
-            font-size: 13px;
+            font-size: 14px;
             color: var(--text-muted);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
-        /* Lock Icon badge */
         .lock-badge {
             font-size: 12px;
             margin-left: 4px;
@@ -221,11 +234,11 @@
 
         .back-btn {
             color: var(--accent);
-            font-weight: 500;
+            font-weight: 400;
             cursor: pointer;
             display: flex;
             align-items: center;
-            font-size: 15px;
+            font-size: 17px;
             background: none;
             border: none;
             outline: none;
@@ -239,67 +252,86 @@
         }
 
         .chat-title-main {
-            font-size: 15px;
+            font-size: 16px;
             font-weight: 600;
         }
 
-        /* Message Feed Cards Style */
+        /* Message Feed Immersive Bubble Framework */
         .feed {
             flex: 1;
             overflow-y: auto;
-            padding: 20px;
+            padding: 16px;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 12px;
             scroll-behavior: smooth;
+            background: #000000;
         }
 
         .message-card {
-            align-self: flex-start;
-            width: 100%;
-            max-width: 90%;
-            animation: fadeIn 0.25s ease-out;
+            display: flex;
+            flex-direction: column;
+            max-width: 75%;
+            animation: fadeIn 0.2s ease-out;
         }
 
+        /* Native iOS Bubble Structural Splits */
+        .message-card.sent {
+            align-self: flex-end;
+            align-items: flex-end;
+        }
+
+        .message-card.received {
+            align-self: flex-start;
+            align-items: flex-start;
+        }
+
+        .bubble-content {
+            padding: 10px 16px;
+            border-radius: 20px;
+            font-size: 16px;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+
+        .sent .bubble-content {
+            background: var(--bubble-outbound);
+            color: #ffffff;
+        }
+
+        .received .bubble-content {
+            background: var(--bubble-inbound);
+            color: #ffffff;
+        }
+
+        /* Native Image Handling Inside/Outside Bubbles */
         .message-image-wrapper {
-            display: block;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             cursor: pointer;
+            border-radius: 16px;
+            overflow: hidden;
+            display: block;
         }
 
         .message-image {
             width: 100%;
+            max-width: 240px;
             height: auto;
-            max-height: 320px;
-            object-fit: contain;
-            border-radius: 14px;
+            max-height: 300px;
+            object-fit: cover;
             display: block;
             transition: opacity 0.15s ease;
-            background-color: transparent;
-            border: none;
         }
 
         .message-image-wrapper:hover .message-image {
             opacity: 0.9;
         }
 
-        .message-text {
-            font-size: 15px;
-            line-height: 1.45;
-            color: var(--text-main);
-            word-break: break-word;
-        }
-
-        .message-card.prompt-card .message-text {
-            color: var(--text-muted);
-            font-style: italic;
-        }
-
         .message-meta {
             font-size: 11px;
             color: var(--text-muted);
             margin-top: 4px;
-            font-weight: 500;
+            padding: 0 6px;
         }
 
         .empty-state {
@@ -311,74 +343,63 @@
 
         /* Input Composition Area */
         .input-area {
-            padding: 16px;
+            padding: 12px 16px;
             border-top: 1px solid var(--border);
-            background: var(--bg-container);
+            background: #000000;
         }
 
         .input-group {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
         }
 
-        /* Identity locked overlay card styling */
         .identity-lock-banner {
             display: none;
-            background: rgba(0, 122, 255, 0.1);
+            background: rgba(10, 132, 255, 0.15);
             color: var(--accent);
             padding: 8px 12px;
             border-radius: 8px;
-            font-size: 12px;
+            font-size: 13px;
             text-align: center;
             font-weight: 500;
-            cursor: pointer;
-        }
-
-        .ios-input {
-            width: 100%;
-            padding: 12px 14px;
-            border-radius: 10px;
-            border: none;
-            background: var(--input-bg);
-            color: var(--text-main);
-            font-size: 14px;
-            outline: none;
-        }
-
-        textarea.ios-input {
-            resize: none;
-            height: 64px;
-        }
-
-        textarea.ios-input:disabled {
-            opacity: 0.6;
             cursor: pointer;
         }
 
         .attachment-row {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
+            background: #1c1c1e;
+            border-radius: 20px;
+            padding: 4px 8px 4px 14px;
+        }
+
+        .ios-input {
+            flex: 1;
+            padding: 8px 0;
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            font-size: 16px;
+            outline: none;
+            resize: none;
+            height: 36px;
+            line-height: 20px;
         }
 
         .file-label {
-            background: var(--input-bg);
-            color: var(--text-main);
-            padding: 12px;
-            border-radius: 10px;
-            font-size: 16px;
+            color: var(--accent);
+            font-size: 22px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 45px;
-            height: 45px;
-            transition: opacity 0.1s;
+            padding-right: 4px;
         }
 
         .file-label.disabled {
-            opacity: 0.4;
+            opacity: 0.3;
             pointer-events: none;
         }
 
@@ -387,53 +408,112 @@
             position: relative;
             align-self: flex-start;
             margin-bottom: 4px;
+            padding-left: 45px;
         }
 
         .img-preview {
-            width: 50px;
-            height: 50px;
+            width: 55px;
+            height: 55px;
             object-fit: cover;
-            border-radius: 8px;
+            border-radius: 12px;
             border: 1px solid var(--border);
         }
 
         .remove-preview {
             position: absolute;
-            top: -6px;
-            right: -6px;
+            top: -4px;
+            right: -4px;
             background: var(--danger);
             color: white;
             border: none;
             border-radius: 50%;
-            width: 16px;
-            height: 16px;
-            font-size: 10px;
+            width: 18px;
+            height: 18px;
+            font-size: 11px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
-        .ios-btn {
-            flex: 1;
-            background-color: var(--btn-bg);
-            color: var(--btn-text);
+        .send-pill-btn {
+            background: var(--accent);
+            color: #ffffff;
             border: none;
-            padding: 12px;
-            border-radius: 10px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
             font-size: 14px;
-            font-weight: 600;
+            font-weight: bold;
             cursor: pointer;
-            height: 45px;
-            transition: opacity 0.1s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: transform 0.1s;
         }
 
-        .ios-btn:disabled {
-            opacity: 0.4;
+        .send-pill-btn:disabled {
+            background: #2c2c2e;
+            color: #8e8e93;
             pointer-events: none;
         }
 
-        /* Passcode Security Sheet Layer Overlay */
+        /* Lightbox Overlay View */
+        .image-modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            z-index: 500;
+            display: none;
+            opacity: 0;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            transition: opacity 0.2s ease;
+        }
+
+        .image-modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-close-btn {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            z-index: 510;
+        }
+
+        .expanded-modal-image {
+            max-width: 100%;
+            max-height: 75vh;
+            object-fit: contain;
+            border-radius: 14px;
+            transform: scale(0.95);
+            transition: transform 0.2s cubic-bezier(0.1, 1, 0.1, 1);
+        }
+
+        .image-modal-overlay.active .expanded-modal-image {
+            transform: scale(1);
+        }
+
+        /* Lock Security Screen */
         .lock-overlay {
             position: absolute;
             top: 0;
@@ -457,19 +537,9 @@
         }
 
         .lock-title {
-            font-size: 20px;
+            font-size: 22px;
             font-weight: 600;
             margin-bottom: 8px;
-            letter-spacing: -0.4px;
-        }
-
-        .lock-hint {
-            font-size: 13px;
-            color: var(--text-muted);
-            margin-bottom: 24px;
-            background: var(--input-bg);
-            padding: 6px 12px;
-            border-radius: 6px;
         }
 
         .lock-input {
@@ -478,102 +548,35 @@
             font-size: 24px;
             letter-spacing: 6px;
             padding: 10px;
-            border-radius: 10px;
-            border: 1px solid var(--border);
-            background: var(--input-bg);
+            border-radius: 12px;
+            border: none;
+            background: #1c1c1e;
             color: var(--text-main);
             outline: none;
-            font-weight: bold;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
 
         .lock-actions {
             display: flex;
-            gap: 12px;
-            width: 160px;
+            gap: 16px;
+            width: 180px;
         }
 
         .lock-btn {
             flex: 1;
-            padding: 10px;
-            border-radius: 8px;
+            padding: 12px;
+            border-radius: 10px;
             border: none;
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
         }
 
-        .lock-btn-cancel {
-            background: transparent;
-            color: var(--accent);
-        }
-
-        .lock-btn-submit {
-            background: var(--btn-bg);
-            color: var(--btn-text);
-        }
-
-        /* NEW FEATURE: iOS Native Style Blurred Image Lightbox Modal Pop-up Layout */
-        .image-modal-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            z-index: 500;
-            display: none;
-            opacity: 0;
-            justify-content: center;
-            align-items: center;
-            padding: 24px;
-            transition: opacity 0.25s ease;
-        }
-
-        .image-modal-overlay.active {
-            display: flex;
-            opacity: 1;
-        }
-
-        .modal-close-btn {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            background: rgba(255, 255, 255, 0.2);
-            color: #ffffff;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-            z-index: 510;
-        }
-
-        .modal-close-btn:active {
-            background: rgba(255, 255, 255, 0.4);
-        }
-
-        .expanded-modal-image {
-            max-width: 100%;
-            max-height: 80vh;
-            object-fit: contain;
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-            transform: scale(0.95);
-            transition: transform 0.25s cubic-bezier(0.1, 1, 0.1, 1);
-        }
-
-        .image-modal-overlay.active .expanded-modal-image {
-            transform: scale(1);
-        }
+        .lock-btn-cancel { background: transparent; color: var(--accent); }
+        .lock-btn-submit { background: #ffffff; color: #000000; }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
+            from { opacity: 0; transform: translateY(4px); }
             to { opacity: 1; transform: translateY(0); }
         }
     </style>
@@ -584,13 +587,12 @@
 
     <div class="image-modal-overlay" id="imageModal">
         <button class="modal-close-btn" id="closeModalBtn">✕ Close</button>
-        <img src="" class="expanded-modal-image" id="modalTargetImg" alt="Expanded structural attachment view">
+        <img src="" class="expanded-modal-image" id="modalTargetImg" alt="Expanded image">
     </div>
 
     <div class="lock-overlay" id="lockOverlay">
         <div style="font-size: 40px; margin-bottom: 16px;">🔒</div>
         <div class="lock-title" id="lockTargetTitle">Thread Locked</div>
-        <div class="lock-hint" id="lockHintField">Hint: birthdate</div>
         <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" class="lock-input" id="passcodeInput" placeholder="••••••">
         <div class="lock-actions">
             <button type="button" class="lock-btn lock-btn-cancel" id="lockCancelBtn">Cancel</button>
@@ -601,11 +603,14 @@
     <div class="view" id="listView">
         <div class="ios-navbar list-header">
             <div class="list-header-top">
-                <span style="color: var(--accent); font-size: 15px;">Edit</span>
+                <span style="color: var(--accent); font-size: 17px; cursor: pointer;">Edit</span>
                 <button class="compose-btn" id="addNewContactBtn">📝</button>
             </div>
             <h1>Messages</h1>
-            <p>Anonymous and secure</p>
+            <div class="search-wrapper">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-input" id="threadSearchInput" placeholder="Search">
+            </div>
         </div>
         <div class="conversation-list" id="threadContainer">
             </div>
@@ -635,11 +640,11 @@
                 </div>
 
                 <div class="attachment-row">
-                    <label for="imageInput" class="file-label" id="fileLabelBtn">🖼️</label>
+                    <label for="imageInput" class="file-label" id="fileLabelBtn">📷</label>
                     <input type="file" id="imageInput" accept="image/*" style="display: none;">
                     
-                    <textarea id="messageInput" class="ios-input" placeholder="Write a message..." maxlength="300"></textarea>
-                    <button type="submit" id="submitBtn" class="ios-btn">Send</button>
+                    <input type="text" id="messageInput" class="ios-input" placeholder="iMessage" autocomplete="off">
+                    <button type="submit" id="submitBtn" class="send-pill-btn">↑</button>
                 </div>
             </form>
         </div>
@@ -652,7 +657,7 @@
     const SUPABASE_ANON_KEY = 'sb_publishable_Q-MoQP1-Assz9V9UJQP4LQ_q7E8GowV';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Dom Registries
+    // Nodes List
     const listView = document.getElementById('listView');
     const chatView = document.getElementById('chatView');
     const threadContainer = document.getElementById('threadContainer');
@@ -660,6 +665,7 @@
     const backBtn = document.getElementById('backBtn');
     const chatTitle = document.getElementById('chatTitle');
     const addNewContactBtn = document.getElementById('addNewContactBtn');
+    const threadSearchInput = document.getElementById('threadSearchInput');
 
     const messageForm = document.getElementById('messageForm');
     const messageInput = document.getElementById('messageInput');
@@ -671,12 +677,10 @@
     const removePreviewBtn = document.getElementById('removePreviewBtn');
     const identityLockBanner = document.getElementById('identityLockBanner');
 
-    // Lightbox Modal Node Registries
     const imageModal = document.getElementById('imageModal');
     const modalTargetImg = document.getElementById('modalTargetImg');
     const closeModalBtn = document.getElementById('closeModalBtn');
 
-    // Security Gate Registry
     const lockOverlay = document.getElementById('lockOverlay');
     const lockTargetTitle = document.getElementById('lockTargetTitle');
     const passcodeBtn = document.getElementById('lockSubmitBtn');
@@ -686,17 +690,14 @@
     let currentActiveThread = "Christian Abustan";
     let allGlobalMessages = [];
     let selectedFile = null;
+    let searchQueryText = "";
     
-    // User variable trackers
     let savedUserCodenameForChristian = "";
     let customEmptyThreads = [];
 
-    // Lock definitions schema configurations
-    const PROTECTED_THREADS = {
-        "eren": { pin: "052506", hint: "birthdate" }
-    };
+    const PROTECTED_THREADS = { "eren": { pin: "052506" } };
 
-    // Handle Media Selection
+    // File Selections Rules
     imageInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -713,17 +714,20 @@
         imgPreview.src = '';
     });
 
-    // Navigation triggers
+    // Filtering layout hooks
+    threadSearchInput.addEventListener('input', (e) => {
+        searchQueryText = e.target.value.toLowerCase().trim();
+        renderThreadDeck();
+    });
+
     backBtn.addEventListener('click', () => {
         chatView.classList.remove('slide-in');
         listView.classList.remove('slide-out');
     });
 
-    // Lightbox Control Actions
     function openImageModal(url) {
         modalTargetImg.src = url;
         imageModal.style.display = 'flex';
-        // Let display register then animate opacity frame entry
         setTimeout(() => imageModal.classList.add('active'), 10);
     }
 
@@ -732,21 +736,18 @@
         setTimeout(() => {
             imageModal.style.display = 'none';
             modalTargetImg.src = '';
-        }, 250);
+        }, 200);
     }
 
     closeModalBtn.addEventListener('click', closeImageModal);
-    // Let user tap background overlay space to dismiss modal safely too
     imageModal.addEventListener('click', (e) => {
         if (e.target === imageModal) closeImageModal();
     });
 
-    // Gate entry verification
     function handleThreadSelection(codename) {
         const targetLower = codename.trim().toLowerCase();
-        
         if (PROTECTED_THREADS[targetLower]) {
-            lockTargetTitle.innerText = `Enter Passcode for ${codename}`;
+            lockTargetTitle.innerText = `Enter Passcode`;
             passcodeInput.value = '';
             lockOverlay.style.display = 'flex';
             setTimeout(() => lockOverlay.classList.add('active'), 10);
@@ -762,7 +763,6 @@
             };
             return;
         }
-
         navigateToChat(codename);
     }
 
@@ -776,44 +776,40 @@
     function navigateToChat(codename) {
         currentActiveThread = codename;
         chatTitle.innerText = codename;
-        
         updateInputLockState();
         renderActiveChatMessages();
-        
         listView.classList.add('slide-out');
         chatView.classList.add('slide-in');
     }
 
-    // Evaluate input lockout rule conditions specifically for Christian Abustan
     function updateInputLockState() {
         if (currentActiveThread === "Christian Abustan") {
             if (!savedUserCodenameForChristian) {
                 identityLockBanner.style.display = 'block';
-                identityLockBanner.innerText = "⚠️ Required: Choose your sender codename before typing...";
-                messageInput.placeholder = "Tap the banner above to unlock and add codename...";
+                identityLockBanner.innerText = "⚠️ Required: Set sender Codename first...";
+                messageInput.placeholder = "Tap here to unlock input bar...";
                 messageInput.disabled = true;
                 submitBtn.disabled = true;
                 fileLabelBtn.classList.add('disabled');
             } else {
                 identityLockBanner.style.display = 'block';
-                identityLockBanner.innerText = `Sending anonymously as: @${savedUserCodenameForChristian} (Tap to change)`;
-                messageInput.placeholder = "Write an anonymous message...";
+                identityLockBanner.innerText = `Anonymously as: @${savedUserCodenameForChristian}`;
+                messageInput.placeholder = "iMessage";
                 messageInput.disabled = false;
                 submitBtn.disabled = false;
                 fileLabelBtn.classList.remove('disabled');
             }
         } else {
             identityLockBanner.style.display = 'none';
-            messageInput.placeholder = "Write a message...";
+            messageInput.placeholder = "iMessage";
             messageInput.disabled = false;
             submitBtn.disabled = false;
             fileLabelBtn.classList.remove('disabled');
         }
     }
 
-    // Code assignment prompts
     function triggerCodenameSetupPrompt() {
-        const alias = prompt("Enter your custom sender Codename for this message:");
+        const alias = prompt("Enter your sender Codename:");
         if (alias && alias.trim().length > 0) {
             savedUserCodenameForChristian = alias.trim();
             updateInputLockState();
@@ -827,15 +823,12 @@
         }
     });
 
-    // Add new custom thread/contact handler
     addNewContactBtn.addEventListener('click', () => {
-        const name = prompt("Enter new Contact name or Codename:");
+        const name = prompt("Enter contact name:");
         if (name && name.trim().length > 0) {
             const formattedName = name.trim();
-            
             const threadExists = allGlobalMessages.some(m => m.codename.toLowerCase() === formattedName.toLowerCase()) || 
                                  customEmptyThreads.includes(formattedName);
-            
             if (!threadExists) {
                 customEmptyThreads.push(formattedName);
                 renderThreadDeck();
@@ -844,17 +837,13 @@
         }
     });
 
-    // Sync from database
     async function fetchSystemLogs() {
         const { data, error } = await supabaseClient
             .from('messages')
             .select('*')
             .order('id', { ascending: true });
 
-        if (error) {
-            console.error(error);
-            return;
-        }
+        if (error) return;
 
         allGlobalMessages = data || [];
         renderThreadDeck();
@@ -866,17 +855,16 @@
     function renderThreadDeck() {
         const threadsMap = {};
 
-        // Primary placeholder deck anchors
         threadsMap["Christian Abustan"] = {
             codename: "Christian Abustan",
-            text: "Tap here to leave an anonymous note...",
+            text: "Tap to leave an anonymous note...",
             created_at: new Date().toISOString()
         };
 
         customEmptyThreads.forEach(name => {
             threadsMap[name] = {
                 codename: name,
-                text: "No messages yet. Tap to start writing...",
+                text: "No messages yet...",
                 created_at: new Date().toISOString()
             };
         });
@@ -885,23 +873,33 @@
             if (msg.codename !== "Christian Abustan") {
                 threadsMap[msg.codename] = msg;
             } else {
-                if (new Date(msg.created_at) > new Date(threadsMap["Christian Abustan"].created_at) || threadsMap["Christian Abustan"].id === undefined) {
+                if (!threadsMap["Christian Abustan"].id || new Date(msg.created_at) > new Date(threadsMap["Christian Abustan"].created_at)) {
                     threadsMap["Christian Abustan"] = msg;
                 }
             }
         });
 
-        const sortedThreads = Object.values(threadsMap).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        let sortedThreads = Object.values(threadsMap).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+        // Filter layout query rules
+        if (searchQueryText) {
+            sortedThreads = sortedThreads.filter(t => t.codename.toLowerCase().includes(searchQueryText));
+        }
 
         threadContainer.innerHTML = '';
         sortedThreads.forEach(th => {
-            const displayName = th.codename === "Christian Abustan" ? "Christian Abustan" : th.codename;
+            const displayName = th.codename;
             const initials = displayName.substring(0, 2).toUpperCase();
             const date = new Date(th.created_at);
             const timeLabel = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             
             const isLocked = !!PROTECTED_THREADS[displayName.trim().toLowerCase()];
             const lockIndicator = isLocked ? '<span class="lock-badge">🔒</span>' : '';
+
+            let previewText = th.text;
+            if (!previewText || previewText === "‎") {
+                previewText = "📷 Image attachment";
+            }
 
             const div = document.createElement('div');
             div.className = 'thread-item';
@@ -912,7 +910,7 @@
                         <span class="thread-name">${escapeHTML(displayName)} ${lockIndicator}</span>
                         <span class="thread-time">${timeLabel}</span>
                     </div>
-                    <div class="thread-preview">${isLocked ? '<i>Thread is Passcode Protected</i>' : escapeHTML(th.text || "Sent an image")}</div>
+                    <div class="thread-preview">${isLocked ? '<i>Encrypted Room</i>' : escapeHTML(previewText)}</div>
                 </div>
             `;
             div.addEventListener('click', () => handleThreadSelection(displayName));
@@ -920,53 +918,43 @@
         });
     }
 
-    // Text message layout framework parser 
     function renderActiveChatMessages() {
         messageFeed.innerHTML = '';
         const subset = allGlobalMessages.filter(m => m.codename === currentActiveThread);
 
-        if (subset.length === 0 && currentActiveThread !== "Christian Abustan") {
-            const card = document.createElement('div');
-            card.className = 'message-card prompt-card';
-            card.innerHTML = `
-                <div class="message-text">This is the start of your anonymous message history with @${escapeHTML(currentActiveThread)}. Send a note below to save this thread permanently.</div>
-                <div class="message-meta">System Prompt</div>
-            `;
-            messageFeed.appendChild(card);
-            return;
-        } else if (subset.length === 0 && currentActiveThread === "Christian Abustan") {
-            messageFeed.innerHTML = `<div class="empty-state">No public anonymous messages left yet. Be the first!</div>`;
+        if (subset.length === 0) {
+            messageFeed.innerHTML = `<div class="empty-state">iMessage History with ${escapeHTML(currentActiveThread)}</div>`;
             return;
         }
 
         subset.forEach(msg => {
             const card = document.createElement('div');
-            card.className = 'message-card';
+            
+            // Assign out/in bubbles depending on codename context rules
+            const isChristian = currentActiveThread === "Christian Abustan";
+            const isOutbound = isChristian ? (msg.author_alias === savedUserCodenameForChristian && savedUserCodenameForChristian !== "") : false;
+            
+            card.className = `message-card ${isOutbound ? 'sent' : 'received'}`;
 
-            const dateStr = new Date(msg.created_at).toLocaleDateString([], {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+            const timeLabel = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
             let imageHTML = '';
             if (msg.image_url) {
-                // FIXED: Changed anchor tag to custom JavaScript void execution trigger running openImageModal()
                 imageHTML = `
                     <div class="message-image-wrapper" onclick="openImageModal('${msg.image_url}')">
-                        <img src="${msg.image_url}" class="message-image" alt="Click to expand">
+                        <img src="${msg.image_url}" class="message-image" alt="Attachment">
                     </div>
                 `;
             }
 
-            const secondaryAuthorTag = msg.author_alias ? `via @${msg.author_alias}` : `@${msg.codename}`;
-            const textHTML = msg.text ? `<div class="message-text">${escapeHTML(msg.text)}</div>` : '';
+            const hasText = msg.text && msg.text !== "‎";
+            const textHTML = hasText ? `<div class="bubble-content">${escapeHTML(msg.text)}</div>` : '';
+            const tagLabel = msg.author_alias ? `via @${msg.author_alias}` : `@${msg.codename}`;
 
             card.innerHTML = `
                 ${imageHTML}
                 ${textHTML}
-                <div class="message-meta">${escapeHTML(secondaryAuthorTag)} • ${dateStr}</div>
+                <div class="message-meta">${escapeHTML(tagLabel)} • ${timeLabel}</div>
             `;
             messageFeed.appendChild(card);
         });
@@ -974,10 +962,10 @@
         messageFeed.scrollTop = messageFeed.scrollHeight;
     }
 
-    // Process Forms
+    // Form pipeline submission
     messageForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const text = messageInput.value.trim();
+        let text = messageInput.value.trim();
         if (!text && !selectedFile) return;
 
         if (currentActiveThread === "Christian Abustan" && !savedUserCodenameForChristian) {
@@ -986,7 +974,6 @@
         }
 
         submitBtn.disabled = true;
-        submitBtn.innerText = "..";
 
         let image_url = null;
 
@@ -999,15 +986,15 @@
                 .upload(path, selectedFile);
 
             if (uploadError) {
-                console.error("Storage Error:", uploadError);
-                alert(`Image Upload Failed: ${uploadError.message}`);
+                alert(`Upload error: ${uploadError.message}`);
                 submitBtn.disabled = false;
-                submitBtn.innerText = "Send";
                 return;
             }
 
             const { data } = supabaseClient.storage.from('message-images').getPublicUrl(path);
             image_url = data.publicUrl;
+            
+            if (!text) text = "‎"; 
         }
 
         const dbPayload = {
@@ -1017,23 +1004,18 @@
             author_alias: currentActiveThread === "Christian Abustan" ? savedUserCodenameForChristian : null
         };
 
-        const { error } = await supabaseClient
-            .from('messages')
-            .insert([dbPayload]);
-
+        const { error } = await supabaseClient.from('messages').insert([dbPayload]);
         submitBtn.disabled = false;
-        submitBtn.innerText = "Send";
 
         if (!error) {
             customEmptyThreads = customEmptyThreads.filter(name => name !== currentActiveThread);
-            
             messageInput.value = '';
             selectedFile = null;
             previewContainer.style.display = 'none';
             imgPreview.src = '';
             fetchSystemLogs();
         } else {
-            alert("Could not send message.");
+            alert("Could not send message layer data.");
         }
     });
 
@@ -1042,7 +1024,7 @@
     }
 
     fetchSystemLogs();
-    setInterval(fetchSystemLogs, 8000);
+    setInterval(fetchSystemLogs, 7000);
 </script>
 
 </body>
