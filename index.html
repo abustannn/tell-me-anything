@@ -262,15 +262,28 @@
             animation: fadeIn 0.25s ease-out;
         }
 
+        /* FIX: Prevents cropping, maintains full image structure, adds finger pointer */
+        .message-image-wrapper {
+            display: block;
+            text-decoration: none;
+            margin-bottom: 6px;
+            cursor: pointer;
+        }
+
         .message-image {
             width: 100%;
-            max-height: 220px;
-            object-fit: cover;
+            height: auto;
+            max-height: 320px;
+            object-fit: contain;
             border-radius: 14px;
             border: 1px solid var(--border);
-            margin-bottom: 6px;
-            display: block;
             background-color: var(--input-bg);
+            display: block;
+            transition: opacity 0.15s ease;
+        }
+
+        .message-image-wrapper:hover .message-image {
+            opacity: 0.9;
         }
 
         .message-text {
@@ -708,7 +721,6 @@
                 fileLabelBtn.classList.remove('disabled');
             }
         } else {
-            // Standard threads don't require external identity setups
             identityLockBanner.style.display = 'none';
             messageInput.placeholder = "Write a message...";
             messageInput.disabled = false;
@@ -788,11 +800,9 @@
         });
 
         allGlobalMessages.forEach(msg => {
-            // Keep public messages under Christian Abustan stacked inside the root thread
             if (msg.codename !== "Christian Abustan") {
                 threadsMap[msg.codename] = msg;
             } else {
-                // Pin newest reply preview text to Christian's card
                 if (new Date(msg.created_at) > new Date(threadsMap["Christian Abustan"].created_at) || threadsMap["Christian Abustan"].id === undefined) {
                     threadsMap["Christian Abustan"] = msg;
                 }
@@ -803,7 +813,6 @@
 
         threadContainer.innerHTML = '';
         sortedThreads.forEach(th => {
-            // Ensure visual profile always highlights true name context
             const displayName = th.codename === "Christian Abustan" ? "Christian Abustan" : th.codename;
             const initials = displayName.substring(0, 2).toUpperCase();
             const date = new Date(th.created_at);
@@ -859,12 +868,16 @@
                 minute: '2-digit'
             });
 
+            // FIX: Wraps the image in an <a> tag targeting a blank window, sets layout properties to contain full images
             let imageHTML = '';
             if (msg.image_url) {
-                imageHTML = `<img src="${msg.image_url}" class="message-image" alt="uploaded file">`;
+                imageHTML = `
+                    <a href="${msg.image_url}" target="_blank" class="message-image-wrapper">
+                        <img src="${msg.image_url}" class="message-image" alt="Full sent attachment">
+                    </a>
+                `;
             }
 
-            // If it is inside Christian's feed, append meta metadata tag identifying message authors
             const secondaryAuthorTag = msg.author_alias ? `via @${msg.author_alias}` : `@${msg.codename}`;
 
             card.innerHTML = `
@@ -884,7 +897,6 @@
         const text = messageInput.value.trim();
         if (!text && !selectedFile) return;
 
-        // Double check submission intercept validation rules
         if (currentActiveThread === "Christian Abustan" && !savedUserCodenameForChristian) {
             triggerCodenameSetupPrompt();
             return;
@@ -903,13 +915,18 @@
                 .from('message-images')
                 .upload(path, selectedFile);
 
-            if (!uploadError) {
-                const { data } = supabaseClient.storage.from('message-images').getPublicUrl(path);
-                image_url = data.publicUrl;
+            if (uploadError) {
+                console.error("Storage Error:", uploadError);
+                alert(`Image Upload Failed: ${uploadError.message}`);
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Send";
+                return;
             }
+
+            const { data } = supabaseClient.storage.from('message-images').getPublicUrl(path);
+            image_url = data.publicUrl;
         }
 
-        // For Christian, store it under his root room record but log the custom tracking sender handle inside 'author_alias'
         const dbPayload = {
             codename: currentActiveThread,
             text: text,
