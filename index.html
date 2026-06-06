@@ -861,6 +861,15 @@
             created_at: new Date().toISOString()
         };
 
+        // Always ensure standard pre-configured system contacts display even when database data is null
+        Object.keys(PROTECTED_THREADS).forEach(protectedName => {
+            threadsMap[protectedName] = {
+                codename: protectedName,
+                text: "Encrypted Room...",
+                created_at: new Date(0).toISOString() 
+            };
+        });
+
         customEmptyThreads.forEach(name => {
             threadsMap[name] = {
                 codename: name,
@@ -870,8 +879,11 @@
         });
 
         allGlobalMessages.forEach(msg => {
+            const lowerCodename = msg.codename.toLowerCase();
             if (msg.codename !== "Christian Abustan") {
-                threadsMap[msg.codename] = msg;
+                if (!threadsMap[lowerCodename] || !threadsMap[lowerCodename].id || new Date(msg.created_at) > new Date(threadsMap[lowerCodename].created_at)) {
+                    threadsMap[lowerCodename] = msg;
+                }
             } else {
                 if (!threadsMap["Christian Abustan"].id || new Date(msg.created_at) > new Date(threadsMap["Christian Abustan"].created_at)) {
                     threadsMap["Christian Abustan"] = msg;
@@ -879,7 +891,11 @@
             }
         });
 
-        let sortedThreads = Object.values(threadsMap).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        let sortedThreads = Object.values(threadsMap).sort((a, b) => {
+            if (a.codename.toLowerCase() === "eren" && !a.id) return 1; 
+            if (b.codename.toLowerCase() === "eren" && !b.id) return -1;
+            return new Date(b.created_at) - new Date(a.created_at);
+        });
 
         // Filter layout query rules
         if (searchQueryText) {
@@ -890,14 +906,14 @@
         sortedThreads.forEach(th => {
             const displayName = th.codename;
             const initials = displayName.substring(0, 2).toUpperCase();
-            const date = new Date(th.created_at);
+            const date = th.id ? new Date(th.created_at) : new Date();
             const timeLabel = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             
             const isLocked = !!PROTECTED_THREADS[displayName.trim().toLowerCase()];
             const lockIndicator = isLocked ? '<span class="lock-badge">🔒</span>' : '';
 
             let previewText = th.text;
-            if (!previewText || previewText === "‎") {
+            if (th.id && !previewText) {
                 previewText = "📷 Image attachment";
             }
 
@@ -910,7 +926,7 @@
                         <span class="thread-name">${escapeHTML(displayName)} ${lockIndicator}</span>
                         <span class="thread-time">${timeLabel}</span>
                     </div>
-                    <div class="thread-preview">${isLocked ? '<i>Encrypted Room</i>' : escapeHTML(previewText)}</div>
+                    <div class="thread-preview">${isLocked && !th.id ? '<i>Encrypted Room</i>' : escapeHTML(previewText)}</div>
                 </div>
             `;
             div.addEventListener('click', () => handleThreadSelection(displayName));
@@ -920,7 +936,7 @@
 
     function renderActiveChatMessages() {
         messageFeed.innerHTML = '';
-        const subset = allGlobalMessages.filter(m => m.codename === currentActiveThread);
+        const subset = allGlobalMessages.filter(m => m.codename.toLowerCase() === currentActiveThread.toLowerCase());
 
         if (subset.length === 0) {
             messageFeed.innerHTML = `<div class="empty-state">iMessage History with ${escapeHTML(currentActiveThread)}</div>`;
@@ -930,12 +946,11 @@
         subset.forEach(msg => {
             const card = document.createElement('div');
             
-            // Assign out/in bubbles depending on codename context rules
-            const isChristian = currentActiveThread === "Christian Abustan";
-            const isOutbound = isChristian ? (msg.author_alias === savedUserCodenameForChristian && savedUserCodenameForChristian !== "") : false;
+            // Outbound targets match context rules purely based on codename text matching now
+            const isChristian = currentActiveThread.toLowerCase() === "christian abustan";
+            const isOutbound = isChristian ? (msg.text && msg.text.startsWith(`[from: @${savedUserCodenameForChristian}]`)) : false;
             
             card.className = `message-card ${isOutbound ? 'sent' : 'received'}`;
-
             const timeLabel = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
             let imageHTML = '';
@@ -947,9 +962,20 @@
                 `;
             }
 
-            const hasText = msg.text && msg.text !== "‎";
-            const textHTML = hasText ? `<div class="bubble-content">${escapeHTML(msg.text)}</div>` : '';
-            const tagLabel = msg.author_alias ? `via @${msg.author_alias}` : `@${msg.codename}`;
+            // Strip author meta markers cleanly out of the display strings
+            let cleanText = msg.text || '';
+            if (isChristian && cleanText.startsWith(`[from: @`)) {
+                cleanText = cleanText.substring(cleanText.indexOf('] ') + 2);
+            }
+
+            const textHTML = cleanText ? `<div class="bubble-content">${escapeHTML(cleanText)}</div>` : '';
+            
+            // Build simple clean message tags
+            let tagLabel = `@${msg.codename}`;
+            if (isChristian && msg.text && msg.text.startsWith(`[from: @`)) {
+                const captured = msg.text.match(/^\[from:\s*@([^\]]+)\]/);
+                if (captured) tagLabel = `via @${captured[1]}`;
+            }
 
             card.innerHTML = `
                 ${imageHTML}
@@ -968,13 +994,12 @@
         let text = messageInput.value.trim();
         if (!text && !selectedFile) return;
 
-        if (currentActiveThread === "Christian Abustan" && !savedUserCodenameForChristian) {
+        if (currentActiveThread.toLowerCase() === "christian abustan" && !savedUserCodenameForChristian) {
             triggerCodenameSetupPrompt();
             return;
         }
 
         submitBtn.disabled = true;
-
         let image_url = null;
 
         if (selectedFile) {
@@ -993,38 +1018,41 @@
 
             const { data } = supabaseClient.storage.from('message-images').getPublicUrl(path);
             image_url = data.publicUrl;
-            
-            if (!text) text = "‎"; 
+        }
+
+        // Bundle sender context inline inside the text field dynamically to keep database queries seamless
+        if (currentActiveThread.toLowerCase() === "christian abustan") {
+            text = `[from: @${savedUserCodenameForChristian}] ${text}`;
         }
 
         const dbPayload = {
             codename: currentActiveThread,
-            text: text,
-            image_url: image_url,
-            author_alias: currentActiveThread === "Christian Abustan" ? savedUserCodenameForChristian : null
+            text: text || null,
+            image_url: image_url
         };
 
         const { error } = await supabaseClient.from('messages').insert([dbPayload]);
         submitBtn.disabled = false;
 
         if (!error) {
-            customEmptyThreads = customEmptyThreads.filter(name => name !== currentActiveThread);
+            customEmptyThreads = customEmptyThreads.filter(name => name.toLowerCase() !== currentActiveThread.toLowerCase());
             messageInput.value = '';
             selectedFile = null;
             previewContainer.style.display = 'none';
             imgPreview.src = '';
             fetchSystemLogs();
         } else {
-            alert("Could not send message layer data.");
+            alert("Could not send message.");
         }
     });
 
+    // Helper functions
     function escapeHTML(str) {
         return str ? str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)) : '';
     }
 
     fetchSystemLogs();
-    setInterval(fetchSystemLogs, 7000);
+    setInterval(fetchSystemLogs, 5000);
 </script>
 
 </body>
