@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Messages</title>
-    <!-- Include Supabase CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         /* iOS Minimalist Monochrome Theme */
@@ -262,10 +261,8 @@
             animation: fadeIn 0.25s ease-out;
         }
 
-        /* FIX: Prevents cropping, maintains full image structure, adds finger pointer */
         .message-image-wrapper {
             display: block;
-            text-decoration: none;
             margin-bottom: 6px;
             cursor: pointer;
         }
@@ -276,10 +273,10 @@
             max-height: 320px;
             object-fit: contain;
             border-radius: 14px;
-            border: 1px solid var(--border);
-            background-color: var(--input-bg);
             display: block;
             transition: opacity 0.15s ease;
+            background-color: transparent;
+            border: none;
         }
 
         .message-image-wrapper:hover .message-image {
@@ -516,6 +513,65 @@
             color: var(--btn-text);
         }
 
+        /* NEW FEATURE: iOS Native Style Blurred Image Lightbox Modal Pop-up Layout */
+        .image-modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            z-index: 500;
+            display: none;
+            opacity: 0;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            transition: opacity 0.25s ease;
+        }
+
+        .image-modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-close-btn {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            z-index: 510;
+        }
+
+        .modal-close-btn:active {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        .expanded-modal-image {
+            max-width: 100%;
+            max-height: 80vh;
+            object-fit: contain;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            transform: scale(0.95);
+            transition: transform 0.25s cubic-bezier(0.1, 1, 0.1, 1);
+        }
+
+        .image-modal-overlay.active .expanded-modal-image {
+            transform: scale(1);
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(5px); }
             to { opacity: 1; transform: translateY(0); }
@@ -526,7 +582,11 @@
 
 <div class="app-container">
 
-    <!-- SECURITY SHEET: Passcode Shield Intercept Gate -->
+    <div class="image-modal-overlay" id="imageModal">
+        <button class="modal-close-btn" id="closeModalBtn">✕ Close</button>
+        <img src="" class="expanded-modal-image" id="modalTargetImg" alt="Expanded structural attachment view">
+    </div>
+
     <div class="lock-overlay" id="lockOverlay">
         <div style="font-size: 40px; margin-bottom: 16px;">🔒</div>
         <div class="lock-title" id="lockTargetTitle">Thread Locked</div>
@@ -538,7 +598,6 @@
         </div>
     </div>
 
-    <!-- VIEW 1: Contacts/Conversations Thread Deck -->
     <div class="view" id="listView">
         <div class="ios-navbar list-header">
             <div class="list-header-top">
@@ -549,11 +608,9 @@
             <p>Anonymous and secure</p>
         </div>
         <div class="conversation-list" id="threadContainer">
-            <!-- Dynamic contacts rendering -->
-        </div>
+            </div>
     </div>
 
-    <!-- VIEW 2: Chat Stream Room View -->
     <div class="view" id="chatView">
         <div class="ios-navbar chat-navbar">
             <button class="back-btn" id="backBtn">◀ Messages</button>
@@ -564,12 +621,10 @@
         </div>
 
         <div class="feed" id="messageFeed">
-            <!-- Message cards render here -->
-        </div>
+            </div>
 
         <div class="input-area">
             <form id="messageForm" class="input-group">
-                <!-- Identity locked helper context indicator banner -->
                 <div class="identity-lock-banner" id="identityLockBanner">
                     Active Codename: None (Tap to add)
                 </div>
@@ -583,7 +638,7 @@
                     <label for="imageInput" class="file-label" id="fileLabelBtn">🖼️</label>
                     <input type="file" id="imageInput" accept="image/*" style="display: none;">
                     
-                    <textarea id="messageInput" class="ios-input" placeholder="Write a message..." required maxlength="300"></textarea>
+                    <textarea id="messageInput" class="ios-input" placeholder="Write a message..." maxlength="300"></textarea>
                     <button type="submit" id="submitBtn" class="ios-btn">Send</button>
                 </div>
             </form>
@@ -615,6 +670,11 @@
     const imgPreview = document.getElementById('imgPreview');
     const removePreviewBtn = document.getElementById('removePreviewBtn');
     const identityLockBanner = document.getElementById('identityLockBanner');
+
+    // Lightbox Modal Node Registries
+    const imageModal = document.getElementById('imageModal');
+    const modalTargetImg = document.getElementById('modalTargetImg');
+    const closeModalBtn = document.getElementById('closeModalBtn');
 
     // Security Gate Registry
     const lockOverlay = document.getElementById('lockOverlay');
@@ -657,6 +717,28 @@
     backBtn.addEventListener('click', () => {
         chatView.classList.remove('slide-in');
         listView.classList.remove('slide-out');
+    });
+
+    // Lightbox Control Actions
+    function openImageModal(url) {
+        modalTargetImg.src = url;
+        imageModal.style.display = 'flex';
+        // Let display register then animate opacity frame entry
+        setTimeout(() => imageModal.classList.add('active'), 10);
+    }
+
+    function closeImageModal() {
+        imageModal.classList.remove('active');
+        setTimeout(() => {
+            imageModal.style.display = 'none';
+            modalTargetImg.src = '';
+        }, 250);
+    }
+
+    closeModalBtn.addEventListener('click', closeImageModal);
+    // Let user tap background overlay space to dismiss modal safely too
+    imageModal.addEventListener('click', (e) => {
+        if (e.target === imageModal) closeImageModal();
     });
 
     // Gate entry verification
@@ -868,21 +950,22 @@
                 minute: '2-digit'
             });
 
-            // FIX: Wraps the image in an <a> tag targeting a blank window, sets layout properties to contain full images
             let imageHTML = '';
             if (msg.image_url) {
+                // FIXED: Changed anchor tag to custom JavaScript void execution trigger running openImageModal()
                 imageHTML = `
-                    <a href="${msg.image_url}" target="_blank" class="message-image-wrapper">
-                        <img src="${msg.image_url}" class="message-image" alt="Full sent attachment">
-                    </a>
+                    <div class="message-image-wrapper" onclick="openImageModal('${msg.image_url}')">
+                        <img src="${msg.image_url}" class="message-image" alt="Click to expand">
+                    </div>
                 `;
             }
 
             const secondaryAuthorTag = msg.author_alias ? `via @${msg.author_alias}` : `@${msg.codename}`;
+            const textHTML = msg.text ? `<div class="message-text">${escapeHTML(msg.text)}</div>` : '';
 
             card.innerHTML = `
                 ${imageHTML}
-                <div class="message-text">${escapeHTML(msg.text)}</div>
+                ${textHTML}
                 <div class="message-meta">${escapeHTML(secondaryAuthorTag)} • ${dateStr}</div>
             `;
             messageFeed.appendChild(card);
