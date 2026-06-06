@@ -653,9 +653,10 @@
 </div>
 
 <script>
-    const SUPABASE_URL = 'https://muxekpbcawffuvszaxmk.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_Q-MoQP1-Assz9V9UJQP4LQ_q7E8GowV';
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // New Supabase Project Credentials Setup
+    const SUPABASE_URL = 'https://jlbfzhzcunesctqbusfa.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_it3xCpKj-zWj7Chayq-_eQ_Fd1FcLki';
+    const supabaseClient = supabase.createClient(https://jlbfzhzcunesctqbusfa.supabase.co, sb_publishable_it3xCpKj-zWj7Chayq-_eQ_Fd1FcLki);
 
     // Nodes List
     const listView = document.getElementById('listView');
@@ -783,7 +784,7 @@
     }
 
     function updateInputLockState() {
-        if (currentActiveThread === "Christian Abustan") {
+        if (currentActiveThread.toLowerCase() === "christian abustan") {
             if (!savedUserCodenameForChristian) {
                 identityLockBanner.style.display = 'block';
                 identityLockBanner.innerText = "⚠️ Required: Set sender Codename first...";
@@ -818,7 +819,7 @@
 
     identityLockBanner.addEventListener('click', triggerCodenameSetupPrompt);
     messageInput.addEventListener('click', () => {
-        if (messageInput.disabled && currentActiveThread === "Christian Abustan") {
+        if (messageInput.disabled && currentActiveThread.toLowerCase() === "christian abustan") {
             triggerCodenameSetupPrompt();
         }
     });
@@ -880,7 +881,7 @@
 
         allGlobalMessages.forEach(msg => {
             const lowerCodename = msg.codename.toLowerCase();
-            if (msg.codename !== "Christian Abustan") {
+            if (msg.codename.toLowerCase() !== "christian abustan") {
                 if (!threadsMap[lowerCodename] || !threadsMap[lowerCodename].id || new Date(msg.created_at) > new Date(threadsMap[lowerCodename].created_at)) {
                     threadsMap[lowerCodename] = msg;
                 }
